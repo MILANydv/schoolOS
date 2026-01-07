@@ -16,6 +16,13 @@ import examRoutes from './routes/exams'
 import timetableRoutes from './routes/timetable'
 import logRoutes from './routes/logs'
 import admissionRoutes from './routes/admissions'
+import homeworkRoutes from './routes/homework'
+import libraryRoutes from './routes/library'
+import subjectRoutes from './routes/subjects'
+import parentRoutes from './routes/parents'
+import certificateRoutes from './routes/certificates'
+import messageRoutes from './routes/messages'
+import reportRoutes from './routes/reports'
 
 dotenv.config()
 
@@ -42,6 +49,13 @@ app.use('/api/exams', examRoutes)
 app.use('/api/timetable', timetableRoutes)
 app.use('/api/logs', logRoutes)
 app.use('/api/admissions', admissionRoutes)
+app.use('/api/homework', homeworkRoutes)
+app.use('/api/library', libraryRoutes)
+app.use('/api/subjects', subjectRoutes)
+app.use('/api/parents', parentRoutes)
+app.use('/api/certificates', certificateRoutes)
+app.use('/api/messages', messageRoutes)
+app.use('/api/reports', reportRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
