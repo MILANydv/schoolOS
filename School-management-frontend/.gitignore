@@ -1,0 +1,46 @@
+# Build output
+/dist/
+/build/
+/out/
+/.next/
+/coverage/
+
+
+
+# Node modules
+node_modules/
+
+# Editor/IDE stuff
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Tailwind/print/output related
+*.pdf
+print-*.png
+print-preview.png
+html2canvas-output/
+screenshots/
+
+# Prisma (if using SQLite for local dev)
+prisma/dev.db
+prisma/dev.db-journal
+
+# Environment variables
+.env
+.env.*.local
+
+# pnpm debug logs
+.pnpm-debug.log
+
+# Optional: ignore lockfiles 
+/# package-lock.json
+/# pnpm-lock.yaml
+/# yarn.lock
