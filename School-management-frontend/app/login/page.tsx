@@ -33,12 +33,8 @@ export default function LoginPage() {
           id: user.id,
           name: `${user.firstName} ${user.lastName}`,
           email: user.email,
-          role: user.role as any
+          role: user.role as (typeof USER_ROLES)[keyof typeof USER_ROLES],
         })
-
-        // Set cookie for middleware
-        document.cookie = `userRole=${user.role}; path=/; max-age=604800` // 7 days
-        localStorage.setItem('token', token)
 
         toast.success("Login successful!")
 
