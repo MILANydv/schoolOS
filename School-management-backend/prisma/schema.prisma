@@ -13,21 +13,33 @@ model School {
   email     String
   phone     String
   address   String
+  website   String?
+  logo      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  users         User[]
-  students      Student[]
-  classes       Class[]
-  teachers      Teacher[]
-  fees          Fee[]
-  attendance    Attendance[]
-  notifications Notification[]
-  events        Event[]
-  exams         Exam[]
-  timetables    Timetable[]
-  logs          Log[]
-  admissions    Admission[]
+  users           User[]
+  students        Student[]
+  classes         Class[]
+  teachers        Teacher[]
+  parents         Parent[]
+  fees            Fee[]
+  attendance      Attendance[]
+  notifications   Notification[]
+  events          Event[]
+  exams           Exam[]
+  timetables      Timetable[]
+  logs            Log[]
+  admissions      Admission[]
+  subjects        Subject[]
+  homework        Homework[]
+  library         Library[]
+  certificates    Certificate[]
+  idCards         IDCard[]
+  reports         Report[]
+  messages        Message[]
+  academicYears   AcademicYear[]
+  feeStructures   FeeStructure[]
 }
 
 model User {
@@ -38,21 +50,42 @@ model User {
   firstName String
   lastName  String
   phone     String?
+  avatar    String?
   schoolId  String
   status    String   @default("ACTIVE")
+  lastLogin DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  school  School   @relation(fields: [schoolId], references: [id])
-  logs    Log[]
-  teacher Teacher?
-  student Student?
+  school          School    @relation(fields: [schoolId], references: [id])
+  logs            Log[]
+  teacher         Teacher?
+  student         Student?
+  parent          Parent?
+  sentMessages    Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model Parent {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  schoolId          String
+  occupation        String?
+  address           String?
+  emergencyContact  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  user     User       @relation(fields: [userId], references: [id])
+  school   School     @relation(fields: [schoolId], references: [id])
+  students Student[]
 }
 
 model Student {
   id              String   @id @default(uuid())
   schoolId        String
   userId          String?  @unique
+  parentId        String?
   rollNumber      String
   firstName       String
   lastName        String
@@ -65,6 +98,8 @@ model Student {
   admissionDate   DateTime
   admissionNumber String   @unique
   status          String   @default("ACTIVE")
+  bloodGroup      String?
+  medicalInfo     String?
   
   addressStreet   String
   addressCity     String
@@ -81,12 +116,18 @@ model Student {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  school     School       @relation(fields: [schoolId], references: [id])
-  user       User?        @relation(fields: [userId], references: [id])
-  class      Class        @relation(fields: [classId], references: [id])
-  attendance Attendance[]
-  fees       Fee[]
-  results    Result[]
+  school         School          @relation(fields: [schoolId], references: [id])
+  user           User?           @relation(fields: [userId], references: [id])
+  parent         Parent?         @relation(fields: [parentId], references: [id])
+  class          Class           @relation(fields: [classId], references: [id])
+  attendance     Attendance[]
+  fees           Fee[]
+  results        Result[]
+  homeworkSubmissions HomeworkSubmission[]
+  libraryIssues  LibraryIssue[]
+  certificates   Certificate[]
+  idCard         IDCard?
+  disciplineLogs DisciplineLog[]
   
   @@unique([schoolId, rollNumber])
 }
@@ -100,15 +141,48 @@ model Class {
   academicYear String
   capacity     Int
   roomNumber   String?
+  classTeacherId String?
   status       String   @default("ACTIVE")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   
-  school     School       @relation(fields: [schoolId], references: [id])
-  students   Student[]
-  attendance Attendance[]
-  exams      Exam[]
-  timetable  Timetable[]
+  school         School       @relation(fields: [schoolId], references: [id])
+  students       Student[]
+  attendance     Attendance[]
+  exams          Exam[]
+  timetable      Timetable[]
+  homework       Homework[]
+  classSubjects  ClassSubject[]
+  admissions     Admission[]
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  schoolId    String
+  name        String
+  code        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school        School         @relation(fields: [schoolId], references: [id])
+  classSubjects ClassSubject[]
+  homework      Homework[]
+  exams         Exam[]
+  timetable     Timetable[]
+}
+
+model ClassSubject {
+  id        String   @id @default(uuid())
+  classId   String
+  subjectId String
+  teacherId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  class   Class    @relation(fields: [classId], references: [id])
+  subject Subject  @relation(fields: [subjectId], references: [id])
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
 }
 
 model Teacher {
@@ -120,13 +194,32 @@ model Teacher {
   qualification String
   experience    Int
   joinDate      DateTime
+  salary        Float?
   status        String   @default("ACTIVE")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
-  school    School      @relation(fields: [schoolId], references: [id])
-  user      User        @relation(fields: [userId], references: [id])
-  timetable Timetable[]
+  school        School         @relation(fields: [schoolId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  timetable     Timetable[]
+  classSubjects ClassSubject[]
+  homework      Homework[]
+  leaveRequests LeaveRequest[]
+}
+
+model LeaveRequest {
+  id          String   @id @default(uuid())
+  teacherId   String
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      String   @default("PENDING")
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  teacher Teacher @relation(fields: [teacherId], references: [id])
 }
 
 model Attendance {
@@ -147,18 +240,49 @@ model Attendance {
   @@unique([studentId, date])
 }
 
-model Fee {
+model AcademicYear {
+  id        String   @id @default(uuid())
+  schoolId  String
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model FeeStructure {
   id           String   @id @default(uuid())
   schoolId     String
-  studentId    String
-  feeType      String
-  totalAmount  Float
-  paidAmount   Float    @default(0)
-  dueDate      DateTime
-  status       String   @default("DUE")
+  name         String
+  grade        String
   academicYear String
+  amount       Float
+  frequency    String
+  description  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  
+  school School @relation(fields: [schoolId], references: [id])
+}
+
+model Fee {
+  id            String   @id @default(uuid())
+  schoolId      String
+  studentId     String
+  feeType       String
+  totalAmount   Float
+  paidAmount    Float    @default(0)
+  dueDate       DateTime
+  lateFee       Float    @default(0)
+  discount      Float    @default(0)
+  status        String   @default("DUE")
+  academicYear  String
+  installments  Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   
   school   School       @relation(fields: [schoolId], references: [id])
   student  Student      @relation(fields: [studentId], references: [id])
@@ -166,15 +290,115 @@ model Fee {
 }
 
 model FeePayment {
-  id            String   @id @default(uuid())
-  feeId         String
-  amount        Float
-  paymentMethod String
-  paymentDate   DateTime
-  receiptNumber String   @unique
-  createdAt     DateTime @default(now())
+  id              String   @id @default(uuid())
+  feeId           String
+  amount          Float
+  paymentMethod   String
+  paymentDate     DateTime
+  receiptNumber   String   @unique
+  transactionId   String?
+  paymentGateway  String?
+  gatewayResponse Json?
+  createdAt       DateTime @default(now())
   
   fee Fee @relation(fields: [feeId], references: [id])
+}
+
+model Homework {
+  id          String   @id @default(uuid())
+  schoolId    String
+  classId     String
+  subjectId   String
+  teacherId   String
+  title       String
+  description String
+  dueDate     DateTime
+  attachments Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school      School               @relation(fields: [schoolId], references: [id])
+  class       Class                @relation(fields: [classId], references: [id])
+  subject     Subject              @relation(fields: [subjectId], references: [id])
+  teacher     Teacher              @relation(fields: [teacherId], references: [id])
+  submissions HomeworkSubmission[]
+}
+
+model HomeworkSubmission {
+  id         String   @id @default(uuid())
+  homeworkId String
+  studentId  String
+  content    String?
+  attachments Json?
+  submittedAt DateTime
+  grade      String?
+  marks      Float?
+  feedback   String?
+  status     String   @default("SUBMITTED")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  homework Homework @relation(fields: [homeworkId], references: [id])
+  student  Student  @relation(fields: [studentId], references: [id])
+}
+
+model Exam {
+  id          String   @id @default(uuid())
+  schoolId    String
+  classId     String
+  subjectId   String
+  name        String
+  date        DateTime
+  startTime   String
+  endTime     String
+  duration    Int
+  totalMarks  Int
+  passingMarks Int
+  type        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  results     Result[]
+}
+
+model Result {
+  id            String   @id @default(uuid())
+  examId        String
+  studentId     String
+  marksObtained Float
+  grade         String?
+  percentage    Float?
+  remarks       String?
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  exam      Exam     @relation(fields: [examId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
+  
+  @@unique([examId, studentId])
+}
+
+model Timetable {
+  id          String   @id @default(uuid())
+  schoolId    String
+  classId     String
+  subjectId   String
+  dayOfWeek   String
+  startTime   String
+  endTime     String
+  teacherId   String?
+  roomNumber  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  class       Class    @relation(fields: [classId], references: [id])
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  teacher     Teacher? @relation(fields: [teacherId], references: [id])
 }
 
 model Notification {
@@ -186,10 +410,28 @@ model Notification {
   priority  String
   audience  String[]
   status    String   @default("DRAFT")
+  sentAt    DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   school School @relation(fields: [schoolId], references: [id])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  schoolId   String
+  senderId   String
+  receiverId String
+  subject    String?
+  content    String
+  isRead     Boolean  @default(false)
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  school   School @relation(fields: [schoolId], references: [id])
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User   @relation("ReceivedMessages", fields: [receiverId], references: [id])
 }
 
 model Event {
@@ -209,54 +451,97 @@ model Event {
   school      School   @relation(fields: [schoolId], references: [id])
 }
 
-model Exam {
+model Library {
   id          String   @id @default(uuid())
   schoolId    String
-  classId     String
-  subject     String
+  title       String
+  author      String
+  isbn        String?
+  category    String
+  totalCopies Int
+  available   Int
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school School         @relation(fields: [schoolId], references: [id])
+  issues LibraryIssue[]
+}
+
+model LibraryIssue {
+  id         String    @id @default(uuid())
+  libraryId  String
+  studentId  String
+  issueDate  DateTime
+  dueDate    DateTime
+  returnDate DateTime?
+  fine       Float     @default(0)
+  status     String    @default("ISSUED")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  
+  library Library @relation(fields: [libraryId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model Certificate {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String
+  type        String
+  issuedDate  DateTime
+  content     String
+  certificateNumber String @unique
+  qrCode      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school  School  @relation(fields: [schoolId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model IDCard {
+  id          String   @id @default(uuid())
+  schoolId    String
+  studentId   String   @unique
+  cardNumber  String   @unique
+  issuedDate  DateTime
+  expiryDate  DateTime
+  qrCode      String?
+  barcode     String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  school  School  @relation(fields: [schoolId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  schoolId    String
+  type        String
   name        String
-  date        DateTime
-  startTime   String
-  duration    Int
-  totalMarks  Int
+  description String?
+  filters     Json?
+  data        Json
+  generatedBy String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  school      School   @relation(fields: [schoolId], references: [id])
-  class       Class    @relation(fields: [classId], references: [id])
-  results     Result[]
+  
+  school School @relation(fields: [schoolId], references: [id])
 }
 
-model Result {
-  id        String   @id @default(uuid())
-  examId    String
-  studentId String
-  marksObtained Float
-  grade     String?
-  remarks   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  exam      Exam     @relation(fields: [examId], references: [id])
-  student   Student  @relation(fields: [studentId], references: [id])
-}
-
-model Timetable {
+model DisciplineLog {
   id          String   @id @default(uuid())
-  schoolId    String
-  classId     String
-  dayOfWeek   String
-  startTime   String
-  endTime     String
-  subject     String
-  teacherId   String?
-  roomNumber  String?
+  studentId   String
+  date        DateTime
+  incident    String
+  action      String?
+  reportedBy  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  school      School   @relation(fields: [schoolId], references: [id])
-  class       Class    @relation(fields: [classId], references: [id])
-  teacher     Teacher? @relation(fields: [teacherId], references: [id])
+  
+  student Student @relation(fields: [studentId], references: [id])
 }
 
 model Log {
@@ -264,6 +549,8 @@ model Log {
   schoolId  String
   userId    String?
   action    String
+  entity    String?
+  entityId  String?
   details   String?
   ipAddress String?
   createdAt DateTime @default(now())
@@ -273,17 +560,31 @@ model Log {
 }
 
 model Admission {
-  id               String   @id @default(uuid())
-  schoolId         String
-  applicantName    String
-  gradeApplyingFor String
-  applicationDate  DateTime
-  status           String   @default("Pending")
-  contact          String
-  notes            String?
-  statusHistory    Json?    // Storing history as JSON for flexibility
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(uuid())
+  schoolId          String
+  applicantName     String
+  gradeApplyingFor  String
+  assignedClassId   String?
+  applicationDate   DateTime
+  status            String   @default("Pending")
+  dateOfBirth       DateTime?
+  gender            String?
+  parentName        String?
+  parentEmail       String?
+  parentPhone       String
+  address           String?
+  previousSchool    String?
+  documents         Json?
+  interviewDate     DateTime?
+  interviewNotes    String?
+  admissionFee      Float?
+  admissionFeePaid  Boolean  @default(false)
+  statusHistory     Json?
+  notes             String?
+  approvedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  school           School   @relation(fields: [schoolId], references: [id])
+  school            School   @relation(fields: [schoolId], references: [id])
+  assignedClass     Class?   @relation(fields: [assignedClassId], references: [id])
 }
