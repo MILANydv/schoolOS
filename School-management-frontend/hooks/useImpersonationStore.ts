@@ -1,12 +1,16 @@
+"use client"
+
 import { create } from "zustand"
 import { persist, createJSONStorage } from "zustand/middleware"
-import type { USER_ROLES } from "@/lib/constants"
+import { USER_ROLES } from "@/lib/constants"
+
+type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES]
 
 interface ImpersonatedUser {
   id: string
   name: string
   email: string
-  role: (typeof USER_ROLES)[keyof typeof USER_ROLES]
+  role: UserRole
 }
 
 interface ImpersonationState {
