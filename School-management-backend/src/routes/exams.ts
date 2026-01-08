@@ -287,7 +287,7 @@ router.get('/student/:studentId/report-card', authMiddleware, async (req, res) =
           }
         }
       },
-      orderBy: { exam: { date: 'asc' }
+      orderBy: { exam: { date: 'asc' } }
     })
 
     let filteredResults = results
