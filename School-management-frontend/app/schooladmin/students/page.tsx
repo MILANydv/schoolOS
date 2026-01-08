@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from "@/hooks"
+import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/query-keys"
 import {
   Edit,
@@ -54,7 +55,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { EnhancedTable, TableColumn, TableFilter, TableAction } from "@/components/table/enhanced-table"
-import { toast } from "sonner"
+import { useToast } from "@/components/ui/use-toast"
 
 // Use the type from MOCK_STUDENTS and create a compatible type for EnhancedTable
 type Student = any
@@ -76,6 +77,11 @@ interface StudentStats {
 
 export default function SchoolAdminStudentsPage() {
   const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  // Pagination state moved up for better scope access
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(25)
 
   // React Query hooks with proper caching and invalidation
   const { data: studentsData, isLoading, refetch } = useStudents()
@@ -225,9 +231,6 @@ export default function SchoolAdminStudentsPage() {
     }
   }
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const [pageSize, setPageSize] = React.useState(25)
 
   // Paginated students
   const paginatedStudents = React.useMemo(() => {

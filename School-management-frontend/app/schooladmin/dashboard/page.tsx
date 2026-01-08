@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useDashboardStats, useRecentActivities, useDashboardAlerts, useRefreshDashboard } from "@/hooks"
+import { useDashboardStats, useRecentActivities, useDashboardAlerts, useRefreshDashboard, useUpcomingEvents } from "@/hooks"
+import { Toaster } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -197,9 +198,6 @@ const performanceSummary = [
 
 
 
-// Upcoming events and alerts will be fetched from API
-const upcomingEvents: any[] = []
-const alerts: any[] = []
 
 export default function SchoolAdminDashboardPage() {
   // New React Query hooks with proper caching
@@ -212,8 +210,16 @@ export default function SchoolAdminDashboardPage() {
   // Local UI state
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [localAlerts, setLocalAlerts] = useState<any[]>([])
 
   const router = useRouter()
+
+  // Sync alertsData with localAlerts
+  useEffect(() => {
+    if (alertsData) {
+      setLocalAlerts(alertsData)
+    }
+  }, [alertsData])
 
   // Real-time clock update
   useEffect(() => {
@@ -236,7 +242,7 @@ export default function SchoolAdminDashboardPage() {
   }
 
   const dismissAlert = (id: string) => {
-    // Alert dismissal is handled by the query cache
+    setLocalAlerts(prev => prev.filter(alert => alert.id !== id))
   }
 
   // Handle card clicks
@@ -244,7 +250,7 @@ export default function SchoolAdminDashboardPage() {
     router.push(href)
   }
 
-  const stats = dashboardStatsData || {
+  const stats = (dashboardStatsData as any)?.data || dashboardStatsData || {
     totalStudents: 0,
     totalTeachers: 0,
     totalClasses: 0,
@@ -329,7 +335,7 @@ export default function SchoolAdminDashboardPage() {
             {[
               {
                 title: "Total Students",
-                value: stats.totalStudents.toString(),
+                value: String(stats?.totalStudents ?? 0),
                 change: "+12%",
                 trend: "up",
                 details: "Total active students",
@@ -337,7 +343,7 @@ export default function SchoolAdminDashboardPage() {
               },
               {
                 title: "Active Teachers",
-                value: stats.totalTeachers.toString(),
+                value: String(stats?.totalTeachers ?? 0),
                 change: "+2",
                 trend: "up",
                 details: "Full-time faculty",
@@ -345,15 +351,15 @@ export default function SchoolAdminDashboardPage() {
               },
               {
                 title: "Fee Collection",
-                value: `₹${stats.totalRevenue.toLocaleString()}`,
-                change: `${stats.feeCollectionRate}%`,
+                value: `₹${(stats?.totalRevenue ?? 0).toLocaleString()}`,
+                change: `${stats?.feeCollectionRate ?? 0}%`,
                 trend: "up",
                 details: "Collection rate",
                 gradient: "from-green-500 to-green-600"
               },
               {
                 title: "Total Due",
-                value: `₹${stats.totalDue.toLocaleString()}`,
+                value: `₹${(stats?.totalDue ?? 0).toLocaleString()}`,
                 change: "-5%",
                 trend: "down",
                 details: "Outstanding fees",
@@ -361,7 +367,7 @@ export default function SchoolAdminDashboardPage() {
               },
               {
                 title: "Upcoming Events",
-                value: (eventsData?.data?.length || 0).toString(),
+                value: String(eventsData?.total || eventsData?.length || 0),
                 change: "Next 7 days",
                 trend: "neutral",
                 details: "Scheduled events",
@@ -369,7 +375,7 @@ export default function SchoolAdminDashboardPage() {
               },
               {
                 title: "System Logs",
-                value: (logsData?.data?.length || 0).toString(),
+                value: String(logsData?.total || logsData?.data?.length || 0),
                 change: "Last 24h",
                 trend: "neutral",
                 details: "System activities",

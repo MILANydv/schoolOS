@@ -30,6 +30,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Providers>
             <main className="flex-1 overflow-auto">{children}</main>
+            <Toaster />
           </Providers>
         </ThemeProvider>
       </body>
