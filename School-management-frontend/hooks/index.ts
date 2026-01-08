@@ -7,7 +7,6 @@ export {
   useStudents,
   useStudent,
   useStudentStats,
-  useStudentAttendance,
   useStudentFees,
   useCreateStudent,
   useUpdateStudent,

@@ -88,16 +88,6 @@ export function useStudentStats(options?: Omit<UseQueryOptions<any>, 'queryKey' 
   });
 }
 
-export function useStudentAttendance(studentId: string, options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>) {
-  return useQuery({
-    queryKey: queryKeys.students.attendance(studentId),
-    queryFn: () => studentsApi.getById(studentId).then((res: any) => res.attendance),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    enabled: !!studentId,
-    ...options,
-  });
-}
 
 export function useStudentFees(studentId: string, options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>) {
   return useQuery({

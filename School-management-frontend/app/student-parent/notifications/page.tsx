@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { 
-  BellRing, 
-  Mail, 
-  Megaphone, 
-  Search, 
-  Filter, 
-  Download, 
-  Share2, 
+import {
+  BellRing,
+  Mail,
+  Megaphone,
+  Search,
+  Filter,
+  Download,
+  Share2,
   MoreHorizontal,
   CheckCircle,
   AlertTriangle,
@@ -36,7 +36,7 @@ import {
   Volume2,
   VolumeX,
   Pin,
-  Unpin,
+  PinOff,
   ChevronRight,
   ExternalLink,
   FileText,
@@ -339,24 +339,24 @@ export default function NotificationsPage() {
   const filteredNotifications = notifications.filter((n) => {
     // Skip archived notifications unless showArchived is true
     if (!showArchived && n.archived) return false
-    
+
     // Filter by tab
     if (activeTab === "unread" && n.read) return false
     if (activeTab === "pinned" && !n.pinned) return false
     if (activeTab !== "all" && activeTab !== "unread" && activeTab !== "pinned") {
       if (n.category.toLowerCase() !== activeTab) return false
     }
-    
+
     // Filter by search query
-    if (searchQuery && !n.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !n.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
-    
+    if (searchQuery && !n.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !n.content.toLowerCase().includes(searchQuery.toLowerCase())) return false
+
     // Filter by category
     if (selectedCategory !== "all" && n.category !== selectedCategory) return false
-    
+
     // Filter by priority
     if (selectedPriority !== "all" && n.priority !== selectedPriority) return false
-    
+
     return true
   })
 
@@ -475,11 +475,11 @@ export default function NotificationsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-        {unreadCount > 0 && (
+            {unreadCount > 0 && (
               <Badge variant="destructive" className="text-sm px-3 py-1">
-            {unreadCount} Unread
-          </Badge>
-        )}
+                {unreadCount} Unread
+              </Badge>
+            )}
             {pinnedCount > 0 && (
               <Badge variant="outline" className="text-sm px-3 py-1">
                 {pinnedCount} Pinned
@@ -621,7 +621,7 @@ export default function NotificationsPage() {
                     getAttachmentIcon={getAttachmentIcon}
                   />
                 ))}
-                        </div>
+            </div>
 
             {sortedNotifications.length === 0 && (
               <Card>
@@ -632,9 +632,9 @@ export default function NotificationsPage() {
                     {searchQuery || selectedCategory !== "all" || selectedPriority !== "all"
                       ? "Try adjusting your filters to see more notifications."
                       : "You're all caught up! Check back later for new updates."}
-                      </p>
-            </CardContent>
-          </Card>
+                  </p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </TabsContent>
@@ -670,9 +670,8 @@ function NotificationCard({
   const [showActions, setShowActions] = useState(false)
 
   return (
-    <Card className={`transition-all duration-200 hover:shadow-md ${
-      !notification.read ? "border-blue-200 bg-blue-50/50" : "hover:bg-muted/50"
-    } ${notification.pinned ? "border-l-4 border-l-blue-500" : ""}`}>
+    <Card className={`transition-all duration-200 hover:shadow-md ${!notification.read ? "border-blue-200 bg-blue-50/50" : "hover:bg-muted/50"
+      } ${notification.pinned ? "border-l-4 border-l-blue-500" : ""}`}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           {/* Icon and Avatar */}
@@ -703,7 +702,7 @@ function NotificationCard({
                     <Badge variant="destructive" className="text-xs">New</Badge>
                   )}
                 </div>
-                
+
                 <p className={`text-sm mb-3 ${!notification.read ? "text-blue-800" : "text-muted-foreground"}`}>
                   {notification.content}
                 </p>
@@ -774,7 +773,7 @@ function NotificationCard({
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
-                
+
                 {showActions && (
                   <div className="absolute right-0 top-8 z-50 w-48 bg-background border rounded-md shadow-lg">
                     <div className="p-1">
@@ -793,7 +792,7 @@ function NotificationCard({
                         className="w-full justify-start"
                         onClick={() => onTogglePin(notification.id)}
                       >
-                        {notification.pinned ? <Unpin className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
+                        {notification.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
                         {notification.pinned ? "Unpin" : "Pin"}
                       </Button>
                       <Button

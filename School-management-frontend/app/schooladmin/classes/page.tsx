@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { classesApi } from "@/lib/api"

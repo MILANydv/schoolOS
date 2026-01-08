@@ -6,8 +6,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar"
 import { Header } from "@/components/layout/header"
 
 export default async function SchoolAdminLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies();
-  const userRole = (await cookieStore).get("userRole")?.value;
+  const cookieStore = await cookies();
+  const userRole = cookieStore.get("userRole")?.value;
 
   if (userRole !== USER_ROLES.SCHOOL_ADMIN && userRole !== USER_ROLES.SUPER_ADMIN) {
     redirect("/login");

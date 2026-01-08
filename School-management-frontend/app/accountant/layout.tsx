@@ -6,12 +6,13 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { Header } from "@/components/layout/header"
 
-export default function AccountantLayout({
+export default async function AccountantLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const userRole = cookies().get("userRole")?.value
+  const cookieStore = await cookies()
+  const userRole = cookieStore.get("userRole")?.value
 
   if (
     userRole !== USER_ROLES.ACCOUNTANT &&
@@ -22,14 +23,14 @@ export default function AccountantLayout({
   }
 
   return (
-       <SidebarProvider defaultOpen={true}>
-         <AppSidebar />
-             <div className="flex flex-1 flex-col min-h-screen">
-   
-           <Header />
-           <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-         </div>
-       </SidebarProvider>
-   
+    <SidebarProvider defaultOpen={true}>
+      <AppSidebar />
+      <div className="flex flex-1 flex-col min-h-screen">
+
+        <Header />
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+      </div>
+    </SidebarProvider>
+
   )
 }
