@@ -670,3 +670,69 @@ export const schoolConfigApi = {
         return response.data
     },
 }
+
+// Schools API (Super Admin)
+export const schoolsApi = {
+    getAll: async (params?: Record<string, any>) => {
+        const response = await apiClient.get('/schools', { params })
+        return response.data
+    },
+
+    getById: async (id: string) => {
+        const response = await apiClient.get(`/schools/${id}`)
+        return response.data
+    },
+
+    getStats: async (id: string) => {
+        const response = await apiClient.get(`/schools/${id}/stats`)
+        return response.data
+    },
+
+    create: async (data: any) => {
+        const response = await apiClient.post('/schools', data)
+        return response.data
+    },
+
+    update: async (id: string, data: any) => {
+        const response = await apiClient.put(`/schools/${id}`, data)
+        return response.data
+    },
+
+    delete: async (id: string) => {
+        const response = await apiClient.delete(`/schools/${id}`)
+        return response.data
+    },
+}
+
+// Subscriptions API (Super Admin)
+export const subscriptionsApi = {
+    getAll: async (params?: Record<string, any>) => {
+        const response = await apiClient.get('/subscriptions', { params })
+        return response.data
+    },
+
+    getById: async (id: string) => {
+        const response = await apiClient.get(`/subscriptions/${id}`)
+        return response.data
+    },
+
+    getBySchool: async (schoolId: string) => {
+        const response = await apiClient.get(`/subscriptions/school/${schoolId}`)
+        return response.data
+    },
+
+    create: async (data: any) => {
+        const response = await apiClient.post('/subscriptions', data)
+        return response.data
+    },
+
+    update: async (id: string, data: any) => {
+        const response = await apiClient.put(`/subscriptions/${id}`, data)
+        return response.data
+    },
+
+    delete: async (id: string) => {
+        const response = await apiClient.delete(`/subscriptions/${id}`)
+        return response.data
+    },
+}

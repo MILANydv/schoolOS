@@ -184,6 +184,22 @@ export const queryKeys = {
     config: ['school', 'config'] as const,
     detail: (id: string) => ['school', 'detail', id] as const,
   },
+
+  // Schools (Super Admin)
+  schools: {
+    all: ['schools'] as const,
+    list: (filters?: Record<string, unknown>) => ['schools', 'list', filters] as const,
+    detail: (id: string) => ['schools', 'detail', id] as const,
+    stats: (id: string) => ['schools', 'stats', id] as const,
+  },
+
+  // Subscriptions (Super Admin)
+  subscriptions: {
+    all: ['subscriptions'] as const,
+    list: (filters?: Record<string, unknown>) => ['subscriptions', 'list', filters] as const,
+    detail: (id: string) => ['subscriptions', 'detail', id] as const,
+    bySchool: (schoolId: string) => ['subscriptions', 'bySchool', schoolId] as const,
+  },
 }
 
 // Helper type for query key arrays
