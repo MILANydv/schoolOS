@@ -9,9 +9,14 @@
     "start": "node dist/index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "prisma db seed"
   },
-  "keywords": ["school", "management", "api"],
+  "keywords": [
+    "school",
+    "management",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -36,5 +41,8 @@
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }
