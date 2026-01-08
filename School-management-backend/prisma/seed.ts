@@ -223,6 +223,30 @@ async function main() {
 
   console.log('✅ Created SCHOOL_ADMIN for Springfield:', springfieldAdmin.email)
 
+  // Seed Subjects
+  const mathSubject = await prisma.subject.create({
+    data: {
+      schoolId: demoSchool.id,
+      name: 'Mathematics',
+      code: 'MATH101'
+    }
+  })
+  const scienceSubject = await prisma.subject.create({
+    data: {
+      schoolId: demoSchool.id,
+      name: 'Science',
+      code: 'SCI101'
+    }
+  })
+  const englishSubject = await prisma.subject.create({
+    data: {
+      schoolId: demoSchool.id,
+      name: 'English',
+      code: 'ENG101'
+    }
+  })
+  console.log('✅ Created Subjects')
+
   // Seed Events
   await prisma.event.createMany({
     data: [
@@ -265,12 +289,15 @@ async function main() {
     data: {
       schoolId: demoSchool.id,
       classId: class10A.id,
-      subject: 'Mathematics',
+      subjectId: mathSubject.id,
       name: 'Mid-Term Examination',
       date: new Date('2025-03-10'),
       startTime: '09:00',
+      endTime: '12:00',
       duration: 180,
-      totalMarks: 100
+      totalMarks: 100,
+      passingMarks: 40,
+      type: 'MID_TERM'
     }
   })
 
@@ -278,12 +305,15 @@ async function main() {
     data: {
       schoolId: demoSchool.id,
       classId: class10A.id,
-      subject: 'Science',
+      subjectId: scienceSubject.id,
       name: 'Mid-Term Examination',
       date: new Date('2025-03-12'),
       startTime: '09:00',
+      endTime: '12:00',
       duration: 180,
-      totalMarks: 100
+      totalMarks: 100,
+      passingMarks: 40,
+      type: 'MID_TERM'
     }
   })
   console.log('✅ Created Exams')
@@ -297,7 +327,7 @@ async function main() {
         dayOfWeek: 'MONDAY',
         startTime: '09:00',
         endTime: '09:45',
-        subject: 'Mathematics',
+        subjectId: mathSubject.id,
         teacherId: teacherRecord.id,
         roomNumber: '101'
       },
@@ -307,7 +337,7 @@ async function main() {
         dayOfWeek: 'MONDAY',
         startTime: '10:00',
         endTime: '10:45',
-        subject: 'Science',
+        subjectId: scienceSubject.id,
         roomNumber: '101'
       },
       {
@@ -316,7 +346,7 @@ async function main() {
         dayOfWeek: 'TUESDAY',
         startTime: '09:00',
         endTime: '09:45',
-        subject: 'English',
+        subjectId: englishSubject.id,
         roomNumber: '101'
       }
     ]
