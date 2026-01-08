@@ -1,9 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { studentsApi } from "@/lib/api"
-import { useStudents } from "@/hooks/useSchoolAdmin"
+import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from "@/hooks"
+import { queryKeys } from "@/lib/query-keys"
 import {
   Edit,
   Trash2,
@@ -35,7 +34,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -56,13 +54,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { EnhancedTable, TableColumn, TableFilter, TableAction } from "@/components/table/enhanced-table"
-import { MOCK_STUDENTS } from "@/lib/constants"
+import { toast } from "sonner"
 
 // Use the type from MOCK_STUDENTS and create a compatible type for EnhancedTable
-// In a real app, this should match the API response type
-type Student = any // Relaxing type for API integration
+type Student = any
 
-// Type for table data that matches EnhancedTable requirements
 type TableStudent = Student & { [key: string]: any }
 
 interface StudentStats {
@@ -80,73 +76,17 @@ interface StudentStats {
 
 export default function SchoolAdminStudentsPage() {
   const queryClient = useQueryClient()
-  const { toast } = useToast()
 
-  // React Query for data fetching
-  const { data: studentsData, isLoading } = useQuery({
-    queryKey: ['students'],
-    queryFn: studentsApi.getAll
-  })
+  // React Query hooks with proper caching and invalidation
+  const { data: studentsData, isLoading, refetch } = useStudents()
+
+  const createStudentMutation = useCreateStudent()
+  const updateStudentMutation = useUpdateStudent()
+  const deleteStudentMutation = useDeleteStudent()
 
   const students = studentsData?.data || []
 
-  // Mutations
-  const deleteStudentMutation = useMutation({
-    mutationFn: studentsApi.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] })
-      toast({ title: "Student deleted", description: "Student record has been removed." })
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to delete student",
-        variant: "destructive"
-      })
-    }
-  })
-
-  const createStudentMutation = useMutation({
-    mutationFn: studentsApi.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] })
-      toast({ title: "Success", description: "Student added successfully" })
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to create student",
-        variant: "destructive"
-      })
-
-      const updateStudentMutation = useMutation({
-        mutationFn: (variables: { id: string, data: any }) => studentsApi.update(variables.id, variables.data),
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['students'] })
-          toast({ title: "Success", description: "Student updated successfully" })
-        },
-        onError: (error: any) => {
-          toast({
-            title: "Error",
-            description: error.response?.data?.error || "Failed to update student",
-            variant: "destructive"
-          })
-        }
-      })
-    }
-  })
-
-  // Zustand state management (keeping for UI state if needed, but using local state for most)
-  const {
-    ui,
-    setSearchTerm,
-    setFilters,
-    setSelectedItems,
-    setPagination,
-    setModalState,
-  } = useStudents()
-
-  // Local UI state (component-specific)
+  // Local UI state
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
