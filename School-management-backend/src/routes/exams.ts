@@ -250,10 +250,197 @@ router.get('/student/:studentId/results', authMiddleware, async (req, res) => {
       },
       orderBy: { exam: { date: 'desc' } }
     })
-    
+
     res.json({ success: true, data: results })
   } catch (error) {
     res.status(500).json({ success: false, error: 'Failed to fetch student results' })
+  }
+})
+
+router.get('/student/:studentId/report-card', authMiddleware, async (req, res) => {
+  try {
+    const { academicYear, term } = req.query
+
+    const student = await prisma.student.findUnique({
+      where: { id: req.params.studentId },
+      include: {
+        class: true,
+        parent: {
+          include: { user: true }
+        }
+      }
+    })
+
+    if (!student || student.schoolId !== req.user.schoolId) {
+      return res.status(404).json({ success: false, error: 'Student not found' })
+    }
+
+    const results = await prisma.result.findMany({
+      where: {
+        studentId: req.params.studentId,
+        isPublished: true
+      },
+      include: {
+        exam: {
+          include: {
+            subject: true
+          }
+        }
+      },
+      orderBy: { exam: { date: 'asc' } }
+    })
+
+    let filteredResults = results
+    if (term !== undefined) {
+      filteredResults = results.filter((r: any) => r.exam.type === term)
+    }
+
+    if (filteredResults.length === 0) {
+      return res.status(404).json({ success: false, error: 'No published results found for this student' })
+    }
+
+    const groupedResults: any = {}
+    let totalMarksObtained = 0
+    let totalMaxMarks = 0
+    let subjectCount = 0
+
+    filteredResults.forEach(result => {
+      const subjectId = result.exam.subject.id
+      const subjectName = result.exam.subject.name
+
+      if (!groupedResults[subjectId]) {
+        groupedResults[subjectId] = {
+          subject: subjectName,
+          code: result.exam.subject.code,
+          exams: []
+        }
+      }
+
+      groupedResults[subjectId].exams.push({
+        examName: result.exam.name,
+        examType: result.exam.type,
+        maxMarks: result.exam.totalMarks,
+        marksObtained: result.marksObtained,
+        grade: result.grade,
+        percentage: result.percentage,
+        remarks: result.remarks
+      })
+
+      totalMarksObtained += result.marksObtained
+      totalMaxMarks += result.exam.totalMarks
+      subjectCount++
+    })
+
+    const overallPercentage = totalMaxMarks > 0 ? (totalMarksObtained / totalMaxMarks) * 100 : 0
+
+    let overallGrade = 'F'
+    if (overallPercentage >= 90) overallGrade = 'A+'
+    else if (overallPercentage >= 80) overallGrade = 'A'
+    else if (overallPercentage >= 70) overallGrade = 'B+'
+    else if (overallPercentage >= 60) overallGrade = 'B'
+    else if (overallPercentage >= 50) overallGrade = 'C+'
+    else if (overallPercentage >= 40) overallGrade = 'C'
+    else if (overallPercentage >= 33) overallGrade = 'D'
+
+    const school = await prisma.school.findUnique({
+      where: { id: req.user.schoolId }
+    })
+
+    const reportCard = {
+      student: {
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`,
+        rollNumber: student.rollNumber,
+        class: student.class.name,
+        section: student.section,
+        admissionNumber: student.admissionNumber,
+        dateOfBirth: student.dateOfBirth
+      },
+      parent: {
+        name: student.parentName,
+        phone: student.parentPhone
+      },
+      school: {
+        name: school?.name,
+        address: school?.address,
+        phone: school?.phone
+      },
+      academicYear,
+      term,
+      generatedDate: new Date().toISOString(),
+      results: Object.values(groupedResults),
+      summary: {
+        totalSubjects: subjectCount,
+        totalMarksObtained,
+        totalMaxMarks,
+        overallPercentage: parseFloat(overallPercentage.toFixed(2)),
+        overallGrade,
+        position: null
+      },
+      attendance: {
+        totalDays: 0,
+        presentDays: 0,
+        percentage: 0
+      },
+      remarks: 'Good performance. Keep up the hard work!'
+    }
+
+    res.json({ success: true, data: reportCard })
+  } catch (error) {
+    console.error('Generate report card error:', error)
+    res.status(500).json({ success: false, error: 'Failed to generate report card' })
+  }
+})
+
+router.get('/class/:classId/report-cards', authMiddleware, checkPermission('view_reports'), async (req, res) => {
+  try {
+    const { academicYear } = req.query
+
+    const students = await prisma.student.findMany({
+      where: {
+        classId: req.params.classId,
+        schoolId: req.user.schoolId
+      },
+      include: {
+        class: true,
+        results: {
+          where: {
+            isPublished: true
+          },
+          include: {
+            exam: {
+              include: {
+                subject: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    const reportCards = students.map(student => {
+      const studentResults = student.results.filter(
+        r => !academicYear || r.exam.type === academicYear
+      )
+
+      const totalMarksObtained = studentResults.reduce((sum, r) => sum + r.marksObtained, 0)
+      const totalMaxMarks = studentResults.reduce((sum, r) => sum + r.exam.totalMarks, 0)
+      const overallPercentage = totalMaxMarks > 0 ? (totalMarksObtained / totalMaxMarks) * 100 : 0
+
+      return {
+        studentId: student.id,
+        studentName: `${student.firstName} ${student.lastName}`,
+        rollNumber: student.rollNumber,
+        totalMarksObtained,
+        totalMaxMarks,
+        overallPercentage: parseFloat(overallPercentage.toFixed(2)),
+        grade: studentResults[0]?.grade || 'N/A'
+      }
+    }).sort((a, b) => b.overallPercentage - a.overallPercentage)
+
+    res.json({ success: true, data: reportCards })
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Failed to generate class report cards' })
   }
 })
 

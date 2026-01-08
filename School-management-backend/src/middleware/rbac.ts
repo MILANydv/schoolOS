@@ -28,7 +28,13 @@ export const PERMISSIONS = {
     'manage_notifications',
     'view_reports',
     'manage_certificates',
-    'manage_subjects'
+    'manage_subjects',
+    'manage_academic_years',
+    'manage_fee_structures',
+    'approve_leaves',
+    'manage_discipline',
+    'manage_grades',
+    'manage_school'
   ],
   [ROLES.TEACHER]: [
     'view_students',
@@ -40,7 +46,8 @@ export const PERMISSIONS = {
     'view_timetable',
     'view_events',
     'send_messages',
-    'apply_leave'
+    'apply_leave',
+    'view_reports'
   ],
   [ROLES.STUDENT]: [
     'view_profile',
@@ -69,7 +76,8 @@ export const PERMISSIONS = {
     'view_fee_reports',
     'process_payments',
     'generate_receipts',
-    'manage_fee_structures'
+    'manage_fee_structures',
+    'view_reports'
   ],
   [ROLES.ADMISSION_OFFICER]: [
     'manage_admissions',
