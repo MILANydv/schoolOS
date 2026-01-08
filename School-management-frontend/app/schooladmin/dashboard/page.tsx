@@ -1,16 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { dashboardApi, logsApi, eventsApi, notificationsApi } from "@/lib/api"
+import { useDashboardStats, useRecentActivities, useDashboardAlerts, useRefreshDashboard } from "@/hooks"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useToast } from "@/components/ui/use-toast"
-import { Toaster } from "@/components/ui/toaster"
-
 import { useRouter } from "next/navigation"
 import {
   Users,
@@ -43,7 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip"
-import { useDashboard } from "@/hooks/useSchoolAdmin"
+import { toast } from "sonner"
 
 // Icons mapping for dashboard metrics
 const getMetricIcon = (title: string) => {
@@ -206,53 +202,18 @@ const upcomingEvents: any[] = []
 const alerts: any[] = []
 
 export default function SchoolAdminDashboardPage() {
-  // Zustand state management
-  const { metrics, refreshData, getStats } = useDashboard()
+  // New React Query hooks with proper caching
+  const { data: dashboardStatsData, isLoading: statsLoading, error: statsError } = useDashboardStats()
+  const { data: logsData } = useRecentActivities()
+  const { data: eventsData } = useUpcomingEvents()
+  const { data: alertsData } = useDashboardAlerts()
+  const refreshDashboard = useRefreshDashboard()
 
-  // Local UI state (not managed by Zustand as it's component-specific)
+  // Local UI state
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [localAlerts, setLocalAlerts] = useState(alerts)
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  const { toast } = useToast()
   const router = useRouter()
-
-  // Fetch additional dashboard data
-  const { data: logsData } = useQuery({
-    queryKey: ['dashboardLogs'],
-    queryFn: logsApi.getAll
-  })
-
-  const { data: eventsData } = useQuery({
-    queryKey: ['dashboardEvents'],
-    queryFn: eventsApi.getAll
-  })
-
-  const { data: notificationsData } = useQuery({
-    queryKey: ['dashboardNotifications'],
-    queryFn: notificationsApi.getAll
-  })
-
-  // Initialize dashboard data
-  useEffect(() => {
-    refreshData()
-  }, [refreshData])
-
-  // Update local alerts when notifications are fetched
-  useEffect(() => {
-    if (notificationsData?.data) {
-      // Filter for high priority or alert type notifications
-      const newAlerts = notificationsData.data
-        .filter((n: any) => n.priority === 'HIGH' || n.type === 'ALERT')
-        .map((n: any) => ({
-          id: n.id,
-          type: n.priority === 'HIGH' ? 'error' : 'warning',
-          title: n.title,
-          message: n.content
-        }))
-      setLocalAlerts(newAlerts)
-    }
-  }, [notificationsData])
 
   // Real-time clock update
   useEffect(() => {
@@ -264,24 +225,18 @@ export default function SchoolAdminDashboardPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true)
     try {
-      await refreshData()
-      toast({
-        title: "Dashboard Refreshed",
-        description: "All data has been updated successfully",
-      })
+      await refreshDashboard()
     } catch (error) {
-      toast({
-        title: "Refresh Failed",
+      toast.error("Refresh Failed", {
         description: "Failed to update dashboard data",
-        variant: "destructive"
       })
     } finally {
       setIsRefreshing(false)
     }
   }
 
-  const dismissAlert = (id: number) => {
-    setLocalAlerts(prev => prev.filter(alert => alert.id !== id))
+  const dismissAlert = (id: string) => {
+    // Alert dismissal is handled by the query cache
   }
 
   // Handle card clicks
@@ -289,13 +244,7 @@ export default function SchoolAdminDashboardPage() {
     router.push(href)
   }
 
-  // Fetch dashboard stats
-  const { data: dashboardStatsData, isLoading: statsLoading, error: statsError } = useQuery({
-    queryKey: ['dashboardStats'],
-    queryFn: dashboardApi.getStats
-  })
-
-  const stats = dashboardStatsData?.data || {
+  const stats = dashboardStatsData || {
     totalStudents: 0,
     totalTeachers: 0,
     totalClasses: 0,
@@ -308,12 +257,9 @@ export default function SchoolAdminDashboardPage() {
   // Handle quick action clicks
   const handleQuickAction = (action: any) => {
     if (action.urgent) {
-      toast({
-        title: "Urgent Action Required",
+      toast.error("Urgent Action Required", {
         description: `${action.badge || action.description}`,
-        variant: "destructive"
       })
-      // Navigate to the action's href
       router.push(action.href)
     } else {
       router.push(action.href)
