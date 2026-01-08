@@ -119,3 +119,23 @@ export {
   prefetchDashboardStats,
   useRefreshDashboard,
 } from './useDashboard';
+
+// Schools (Super Admin)
+export {
+  useSchools,
+  useSchool,
+  useSchoolStats,
+  useCreateSchool,
+  useUpdateSchool,
+  useDeleteSchool,
+} from './useSchools';
+
+// Subscriptions (Super Admin)
+export {
+  useSubscriptions,
+  useSubscription,
+  useSchoolSubscription,
+  useCreateSubscription,
+  useUpdateSubscription,
+  useDeleteSubscription,
+} from './useSubscriptions';
