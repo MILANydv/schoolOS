@@ -120,7 +120,7 @@ export default function SchoolAdminStudentsPage() {
   const updateStudentMutation = useUpdateStudent()
   const deleteStudentMutation = useDeleteStudent()
 
-  const students = studentsData?.data || []
+  const students = ((studentsData as any)?.data || []) as Student[]
 
   // Local UI state
   const [selectedStudent, setSelectedStudent] = React.useState<Student | null>(null)
