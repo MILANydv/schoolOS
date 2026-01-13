@@ -96,7 +96,23 @@ export function Header() {
   const pathname = usePathname()
   const [notifications, setNotifications] = React.useState(mockNotifications)
   const [popoverOpen, setPopoverOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
   const hasUnread = notifications.length > 0
+
+  // Ensure hydration consistency
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Avoid hydration mismatch by not rendering theme icons until mounted
+  const ThemeIcon = React.useMemo(() => {
+    if (!mounted) return null
+    return theme === "light" ? (
+      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-transform duration-300" />
+    ) : (
+      <Moon className="h-[1.2rem] w-[1.2rem] rotate-180 scale-100 transition-transform duration-300" />
+    )
+  }, [theme, mounted])
 
   const breadcrumbs = MOCK_BREADCRUMBS[pathname] || [{ label: "Dashboard", href: "/" }]
 
@@ -269,13 +285,11 @@ export function Header() {
                     aria-label="Toggle theme"
                   >
                     <span className="sr-only">Toggle theme</span>
-                    <span className="transition-transform duration-300">
-                      {theme === "light" ? (
-                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-transform duration-300" />
-                      ) : (
-                        <Moon className="h-[1.2rem] w-[1.2rem] rotate-180 scale-100 transition-transform duration-300" />
-                      )}
-                    </span>
+                    {mounted && (
+                      <span className="transition-transform duration-300">
+                        {ThemeIcon}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -285,7 +299,7 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipTrigger>
-            <TooltipContent side="bottom">{theme === "light" ? "Switch to dark mode" : "Switch to light mode"}</TooltipContent>
+            <TooltipContent side="bottom">{mounted && theme === "light" ? "Switch to dark mode" : mounted ? "Switch to light mode" : "Toggle theme"}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
