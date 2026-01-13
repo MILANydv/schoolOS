@@ -108,3 +108,27 @@ export function useDeleteSchool() {
     },
   })
 }
+
+// Hook to create a school admin
+export function useCreateSchoolAdmin() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ schoolId, data }: { schoolId: string; data: any }) =>
+      schoolsApi.createAdmin(schoolId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.schools.detail(variables.schoolId) })
+      toast({
+        title: 'Success',
+        description: 'School admin created successfully',
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.error || 'Failed to create school admin',
+        variant: 'destructive',
+      })
+    },
+  })
+}

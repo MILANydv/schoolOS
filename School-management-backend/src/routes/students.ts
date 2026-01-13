@@ -168,6 +168,8 @@ router.post('/', authMiddleware, async (req, res) => {
     const password = dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : 'password123'
     const hashedPassword = await require('bcryptjs').hash(password, 10)
 
+    const finalAdmissionNumber = admissionNumber || `ADM${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
+
     const result = await prisma.$transaction(async (prisma) => {
       // Create User
       const user = await prisma.user.create({
@@ -197,7 +199,7 @@ router.post('/', authMiddleware, async (req, res) => {
           classId,
           section: section || 'A',
           rollNumber,
-          admissionNumber,
+          admissionNumber: finalAdmissionNumber,
           admissionDate: new Date(admissionDate),
           parentName,
           parentPhone,

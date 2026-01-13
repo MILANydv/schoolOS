@@ -100,7 +100,7 @@ model Student {
   classId         String
   section         String
   admissionDate   DateTime
-  admissionNumber String   @unique
+  admissionNumber String?   @unique
   status          String   @default("ACTIVE")
   bloodGroup      String?
   medicalInfo     String?
@@ -575,7 +575,7 @@ model Admission {
   gender            String?
   parentName        String?
   parentEmail       String?
-  parentPhone       String
+  parentPhone       String?
   address           String?
   previousSchool    String?
   documents         Json?
