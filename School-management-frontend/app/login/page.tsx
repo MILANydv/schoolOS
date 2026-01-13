@@ -93,6 +93,63 @@ export default function LoginPage() {
               {isLoading ? "Logging in..." : "Login"}
             </Button>
           </form>
+
+          <div className="mt-6 border-t pt-4">
+            <p className="mb-3 text-center text-sm text-gray-500">Quick Login (Dev Only)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmail("superadmin@system.com")
+                  setPassword("password123")
+                }}
+              >
+                Super Admin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmail("admin@demohighschool.com")
+                  setPassword("password123")
+                }}
+              >
+                School Admin
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmail("teacher@demohighschool.com")
+                  setPassword("password123")
+                }}
+              >
+                Teacher
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmail("accountant@demohighschool.com")
+                  setPassword("password123")
+                }}
+              >
+                Accountant
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="col-span-2"
+                onClick={() => {
+                  setEmail("parent@student.com")
+                  setPassword("password123")
+                }}
+              >
+                Student / Parent
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
