@@ -52,6 +52,28 @@ export {
   prefetchClasses,
 } from './useClasses';
 
+// Subjects
+export {
+  useSubjects,
+  useSubject,
+  useCreateSubject,
+  useUpdateSubject,
+  useDeleteSubject,
+  useAssignSubjectToClass,
+  useRemoveSubjectFromClass,
+} from './useSubjects';
+
+// Admissions
+export {
+  useAdmissions,
+  useAdmission,
+  useCreateAdmission,
+  useUpdateAdmission,
+  useDeleteAdmission,
+  useApproveAdmission,
+  useRejectAdmission,
+} from './useAdmissions';
+
 // Fees
 export {
   useFees,

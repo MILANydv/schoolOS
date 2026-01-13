@@ -60,6 +60,29 @@ export function StudentDetailModal({
 }: StudentDetailModalProps) {
   if (!student) return null
 
+  const normalizedStatus = (() => {
+    const raw = String(student.status || '').toUpperCase()
+    if (raw === 'ACTIVE') return 'Active'
+    if (raw === 'INACTIVE') return 'Inactive'
+    return student.status
+  })()
+
+  const normalizedStudent = {
+    ...student,
+    name: student.name || `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student',
+    class: typeof student.class === 'string' ? student.class : student.class?.name || '—',
+    parentContact: student.parentContact || student.parentPhone || '',
+    emergencyContact: student.emergencyContact || [student.emergencyName, student.emergencyPhone].filter(Boolean).join(' '),
+    address:
+      student.address ||
+      [student.addressStreet, student.addressCity, student.addressState, student.addressZip]
+        .filter(Boolean)
+        .join(', '),
+    status: normalizedStatus,
+  }
+
+  student = normalizedStudent
+
   // Mock performance data
   const performanceData = {
     overallGrade: "A-",

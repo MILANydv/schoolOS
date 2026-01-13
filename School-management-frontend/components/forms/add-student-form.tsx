@@ -3,14 +3,12 @@
 import * as React from "react"
 import { WizardStepper } from "@/components/feedback/wizard-stepper"
 import { Button } from "@/components/ui/button"
-import { FormInput } from "@/components/forms/form-input"
-import { FormSelect } from "@/components/forms/form-select"
-import { FormDatePicker } from "@/components/forms/form-date-picker"
-import { MOCK_CLASSES } from "@/lib/constants"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useClasses } from "@/hooks"
+import type { CreateStudentPayload } from "@/lib/api-types"
 
 // Types
 type EmergencyContact = {
@@ -44,7 +42,7 @@ export interface StudentFormData {
 interface AddStudentFormProps {
   isOpen?: boolean;
   onClose?: () => void;
-  onSuccess?: (student: StudentFormData) => void;
+  onSuccess?: (payload: CreateStudentPayload) => void;
   mode?: 'modal' | 'page';
   initialData?: Partial<StudentFormData>;
   isEditing?: boolean;
@@ -245,7 +243,10 @@ const Step3Academic: React.FC<StepComponentProps> = ({ initialData = {}, onNext,
   const [admissionDate, setAdmissionDate] = React.useState<Date | undefined>(initialData.admissionDate)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
 
-  const classOptions = MOCK_CLASSES.map((c) => ({ value: c.name, label: c.name }))
+  const { data: classesData, isLoading: classesLoading } = useClasses()
+  const classes = ((classesData as any)?.data || []) as Array<{ id: string; name: string; grade?: string; section?: string }>
+
+  const classOptions = classes.map((c) => ({ value: c.id, label: c.name }))
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -269,8 +270,8 @@ const Step3Academic: React.FC<StepComponentProps> = ({ initialData = {}, onNext,
         <div className="grid gap-2">
           <Label htmlFor="class">Assign Class <span className="text-red-500">*</span></Label>
           <select id="class" value={cls} onChange={(e) => { setCls(e.target.value); setErrors((prev) => ({ ...prev, class: "" })) }} className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.class ? "border-destructive" : ""}`} required>
-            <option value="">Select a class</option>
-            {classOptions.map(option => (
+            <option value="">{classesLoading ? "Loading classes..." : "Select a class"}</option>
+            {!classesLoading && classOptions.map(option => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
@@ -384,44 +385,33 @@ export function AddStudentForm({ isOpen = true, onClose, onSuccess, mode = 'page
     const studentData = completeData as StudentFormData
     
     try {
-      // Convert data to match backend API
-      const backendData = {
+      const payload: CreateStudentPayload = {
         firstName: studentData.firstName,
         lastName: studentData.lastName,
         email: studentData.email,
         phone: studentData.phone,
-        dateOfBirth: studentData.dateOfBirth?.toISOString(),
+        dateOfBirth: studentData.dateOfBirth!.toISOString(),
         gender: studentData.gender,
-        classId: studentData.class, // Assuming class name maps to ID or needs conversion
-        section: "A", // Default section
+        bloodGroup: studentData.bloodGroup,
+        classId: studentData.class,
+        section: "A",
         rollNumber: studentData.rollNumber,
         admissionNumber: studentData.admissionNumber,
-        admissionDate: studentData.admissionDate?.toISOString(),
+        admissionDate: studentData.admissionDate!.toISOString(),
         parentName: studentData.parentName,
         parentPhone: studentData.parentContact,
         parentEmail: studentData.parentEmail,
-        address: `${studentData.addressStreet}, ${studentData.addressCity}, ${studentData.addressState} ${studentData.addressZip}`,
         addressStreet: studentData.addressStreet,
         addressCity: studentData.addressCity,
         addressState: studentData.addressState,
         addressZip: studentData.addressZip,
-        bloodGroup: studentData.bloodGroup,
         emergencyName: studentData.emergencyContact.name,
         emergencyPhone: studentData.emergencyContact.phone,
-        emergencyRelationship: studentData.emergencyContact.relationship
       }
 
-      // Call success callback with backend data
       if (onSuccess) {
-        onSuccess(backendData)
+        onSuccess(payload)
       }
-
-      toast({
-        title: isEditing ? "Student Updated!" : "Student Added!",
-        description: isEditing 
-          ? `${studentData.firstName} ${studentData.lastName} has been updated successfully.`
-          : `${studentData.firstName} ${studentData.lastName} has been added successfully.`,
-      })
 
       // Close modal if in modal mode
       if (mode === 'modal' && onClose) {
