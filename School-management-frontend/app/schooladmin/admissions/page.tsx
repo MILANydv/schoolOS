@@ -84,6 +84,12 @@ export default function SchoolAdminAdmissionsPage() {
   const [gradeFilter, setGradeFilter] = React.useState("")
   const [dateFilter, setDateFilter] = React.useState("")
 
+  // Get unique grades for filter
+  const uniqueGrades = React.useMemo(() => {
+    const grades = [...new Set(MOCK_CLASSES.map(c => c.grade))]
+    return grades.sort((a, b) => a - b)
+  }, [])
+
   const { toast } = useToast()
 
   // Fetch admissions on mount
@@ -97,13 +103,90 @@ export default function SchoolAdminAdmissionsPage() {
         }
       } catch (error) {
         console.error("Failed to fetch admissions:", error)
-        toast({ title: "Error", description: "Failed to load admissions", variant: "destructive" })
+        // Fallback to mock data if API is not available
+        const mockAdmissions = generateMockAdmissions()
+        setAdmissions(mockAdmissions)
+        toast({ 
+          title: "Using Mock Data", 
+          description: "Backend API unavailable, showing sample data", 
+          variant: "default" 
+        })
       } finally {
         setIsLoading(false)
       }
     }
     fetchAdmissions()
   }, [setAdmissions, toast])
+
+  // Generate mock admissions as fallback
+  const generateMockAdmissions = React.useCallback(() => {
+    const firstNames = [
+      "Liam", "Olivia", "Noah", "Emma", "Oliver", "Ava", "Elijah", "Charlotte", "James", "Sophia",
+      "Benjamin", "Amelia", "Lucas", "Mia", "Mason", "Harper", "Ethan", "Evelyn", "Alexander", "Abigail"
+    ];
+    const lastNames = [
+      "Johnson", "Davis", "Miller", "Wilson", "Brown", "Jones", "Garcia", "Rodriguez", "Martinez", "Anderson",
+      "Taylor", "Thomas", "Hernandez", "Moore", "Martin", "Jackson", "Thompson", "White", "Lopez", "Lee"
+    ];
+    const grades = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const statuses = ["Pending", "Approved", "Rejected", "Waitlisted", "Under Review"];
+    const contactTypes = ["email", "phone"];
+
+    const admissions = [];
+    const count = 25; // Generate smaller sample for fallback
+
+    for (let i = 1; i <= count; i++) {
+      const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+      const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+      const contactType = contactTypes[Math.floor(Math.random() * contactTypes.length)];
+
+      let contact;
+      if (contactType === "email") {
+        contact = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`;
+      } else {
+        contact = `+1-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`;
+      }
+
+      const startDate = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+      const endDate = new Date();
+      const applicationDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
+
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const statusHistory = [
+        {
+          status: "Submitted",
+          date: applicationDate.toISOString(),
+          by: "Applicant",
+          note: "Application submitted online"
+        }
+      ];
+
+      if (status !== "Pending") {
+        const reviewDate = new Date(applicationDate.getTime() + Math.random() * 14 * 24 * 60 * 60 * 1000);
+        statusHistory.push({
+          status,
+          date: reviewDate.toISOString(),
+          by: "Admin",
+          note: status === "Approved" ? "Application approved after review" :
+            status === "Rejected" ? "Application rejected - incomplete documents" :
+              status === "Waitlisted" ? "Application waitlisted - class full" : "Application under review"
+        });
+      }
+
+      admissions.push({
+        id: `adm${i.toString().padStart(3, '0')}`,
+        applicantName: `${firstName} ${lastName}`,
+        gradeApplyingFor: grades[Math.floor(Math.random() * grades.length)],
+        applicationDate: applicationDate.toISOString().split('T')[0],
+        status,
+        contact,
+        notes: Math.random() > 0.7 ? `Additional notes for ${firstName} ${lastName}'s application.` : undefined,
+        statusHistory
+      });
+    }
+
+    return admissions;
+  }, []);
 
   // Analytics
   const total = admissions.length
@@ -376,8 +459,8 @@ export default function SchoolAdminAdmissionsPage() {
                 className="w-32 h-10 bg-gray-50 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
               >
                 <option value="">All Grades</option>
-                {MOCK_CLASSES.map(c => (
-                  <option key={c.grade} value={c.grade}>Grade {c.grade}</option>
+                {uniqueGrades.map(grade => (
+                  <option key={grade} value={grade}>Grade {grade}</option>
                 ))}
               </select>
 
