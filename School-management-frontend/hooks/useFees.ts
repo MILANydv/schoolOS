@@ -189,7 +189,7 @@ export function useRecordPayment() {
         queryClient.setQueryData(queryKeys.fees.list(), context.previousFees);
       }
       if (context?.previousStats) {
-        queryClient.setQueryData(queryKeys.fees.stats(), context.previousStats);
+        queryClient.setQueryData(queryKeys.fees.stats, context.previousStats);
       }
       toast.error("Failed to record payment", {
         description: err instanceof Error ? err.message : "Please try again",
