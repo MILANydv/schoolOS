@@ -495,9 +495,100 @@ router.get('/:id/stats', authMiddleware, checkRole(ROLES.SUPER_ADMIN), async (re
       }
     })
   } catch (error) {
-    console.error('Get school stats error:', error)
-    res.status(500).json({ success: false, error: 'Failed to fetch school statistics' })
+  console.error('Get school stats error:', error)
+  res.status(500).json({ success: false, error: 'Failed to fetch school statistics' })
   }
-})
+  })
 
-export default router
+  /**
+  * @swagger
+  * /api/schools/{id}/admins:
+  *   post:
+  *     summary: Create an admin user for a school (Super Admin only)
+  *     tags: [Schools]
+  *     security:
+  *       - bearerAuth: []
+  *     parameters:
+  *       - in: path
+  *         name: id
+  *         required: true
+  *         schema:
+  *           type: string
+  *     requestBody:
+  *       required: true
+  *       content:
+  *         application/json:
+  *           schema:
+  *             type: object
+  *             required:
+  *               - email
+  *               - password
+  *               - firstName
+  *               - lastName
+  *             properties:
+  *               email:
+  *                 type: string
+  *               password:
+  *                 type: string
+  *               firstName:
+  *                 type: string
+  *               lastName:
+  *                 type: string
+  *               phone:
+  *                 type: string
+  *     responses:
+  *       201:
+  *         description: Admin user created successfully
+  */
+  router.post('/:id/admins', authMiddleware, checkRole(ROLES.SUPER_ADMIN), async (req, res) => {
+  try {
+  const { id } = req.params
+  const { email, password, firstName, lastName, phone } = req.body
+
+  const school = await prisma.school.findUnique({
+    where: { id }
+  })
+
+  if (!school) {
+    return res.status(404).json({ success: false, error: 'School not found' })
+  }
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  if (existingUser) {
+    return res.status(400).json({ success: false, error: 'Email already exists' })
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10)
+
+  const adminUser = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      phone,
+      role: ROLES.SCHOOL_ADMIN,
+      schoolId: id,
+      status: 'ACTIVE'
+    }
+  })
+
+  res.status(201).json({
+    success: true,
+    data: {
+      id: adminUser.id,
+      email: adminUser.email,
+      firstName: adminUser.firstName,
+      lastName: adminUser.lastName
+    }
+  })
+  } catch (error) {
+  console.error('Create school admin error:', error)
+  res.status(500).json({ success: false, error: 'Failed to create school admin' })
+  }
+  })
+
+  export default router

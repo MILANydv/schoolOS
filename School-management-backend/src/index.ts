@@ -31,6 +31,7 @@ import messageRoutes from './routes/messages'
 import reportRoutes from './routes/reports'
 import schoolRoutes from './routes/schools'
 import subscriptionRoutes from './routes/subscriptions'
+import userRoutes from './routes/users'
 
 dotenv.config()
 
@@ -47,6 +48,7 @@ setupSwagger(app)
 app.use('/api/auth', authRoutes)
 app.use('/api/schools', schoolRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
+app.use('/api/users', userRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/classes', classRoutes)
 app.use('/api/attendance', attendanceRoutes)

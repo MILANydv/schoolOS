@@ -69,7 +69,7 @@ router.post('/', authMiddleware, checkPermission('manage_admissions'), async (re
         schoolId: req.user.schoolId,
         applicantName,
         gradeApplyingFor,
-        applicationDate: new Date(applicationDate),
+        applicationDate: applicationDate ? new Date(applicationDate) : new Date(),
         status: status || 'Pending',
         parentPhone,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
@@ -190,7 +190,7 @@ router.post('/:id/approve', authMiddleware, checkPermission('approve_admissions'
           role: 'STUDENT',
           firstName: admission.applicantName.split(' ')[0],
           lastName: admission.applicantName.split(' ').slice(1).join(' ') || '',
-          phone: admission.parentPhone,
+          phone: admission.parentPhone || undefined,
           schoolId: req.user.schoolId,
           status: 'ACTIVE'
         }
@@ -212,14 +212,14 @@ router.post('/:id/approve', authMiddleware, checkPermission('approve_admissions'
           admissionNumber,
           admissionDate: new Date(),
           parentName: admission.parentName || '',
-          parentPhone: admission.parentPhone,
+          parentPhone: admission.parentPhone || '',
           parentEmail: admission.parentEmail || '',
           addressStreet: admission.address || '',
           addressCity: '',
           addressState: '',
           addressZip: '',
           emergencyName: admission.parentName || '',
-          emergencyPhone: admission.parentPhone,
+          emergencyPhone: admission.parentPhone || '',
           status: 'ACTIVE'
         }
       })

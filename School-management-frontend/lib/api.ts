@@ -702,6 +702,39 @@ export const schoolsApi = {
         const response = await apiClient.delete(`/schools/${id}`)
         return response.data
     },
+
+    createAdmin: async (schoolId: string, data: any) => {
+        const response = await apiClient.post(`/schools/${schoolId}/admins`, data)
+        return response.data
+    },
+}
+
+// Users API (Super Admin)
+export const usersApi = {
+    getAll: async (params?: Record<string, any>) => {
+        const response = await apiClient.get('/users', { params })
+        return response.data
+    },
+
+    getById: async (id: string) => {
+        const response = await apiClient.get(`/users/${id}`)
+        return response.data
+    },
+
+    update: async (id: string, data: any) => {
+        const response = await apiClient.put(`/users/${id}`, data)
+        return response.data
+    },
+
+    delete: async (id: string) => {
+        const response = await apiClient.delete(`/users/${id}`)
+        return response.data
+    },
+
+    resetPassword: async (id: string, data: any) => {
+        const response = await apiClient.post(`/users/${id}/reset-password`, data)
+        return response.data
+    },
 }
 
 // Subscriptions API (Super Admin)

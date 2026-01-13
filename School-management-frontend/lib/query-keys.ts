@@ -193,6 +193,13 @@ export const queryKeys = {
     stats: (id: string) => ['schools', 'stats', id] as const,
   },
 
+  // Users (Super Admin)
+  users: {
+    all: ['users'] as const,
+    list: (filters?: Record<string, unknown>) => ['users', 'list', filters] as const,
+    detail: (id: string) => ['users', 'detail', id] as const,
+  },
+
   // Subscriptions (Super Admin)
   subscriptions: {
     all: ['subscriptions'] as const,
