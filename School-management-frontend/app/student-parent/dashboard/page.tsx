@@ -2,15 +2,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from "next/link"
-import { useQuery } from "@tanstack/react-query"
-import { timetableApi, eventsApi, notificationsApi, authApi } from "@/lib/api"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { timetableApi, eventsApi, notificationsApi, authApi, examsApi, resultsApi, feesApi } from "@/lib/api"
 import { useAuthStore } from "@/hooks/useAuthStore"
 import {
   BookOpen,
@@ -52,26 +52,69 @@ export default function StudentParentDashboardPage() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [activeTab, setActiveTab] = useState("overview")
   const { user } = useAuthStore()
+  const queryClient = useQueryClient()
 
-  // Fetch real data
-  const { data: timetableData } = useQuery({
+  // Fetch real data using React Query
+  const { data: timetableData, isLoading: timetableLoading } = useQuery({
     queryKey: ['studentTimetable', user?.id],
     queryFn: () => timetableApi.getStudentTimetable(user?.id || ''),
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
   })
 
-  const { data: eventsData } = useQuery({
-    queryKey: ['events'],
-    queryFn: eventsApi.getAll
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['events', 'upcoming'],
+    queryFn: () => eventsApi.getAll({ upcoming: true, limit: 10 }),
+    staleTime: 10 * 60 * 1000,
   })
 
-  const { data: notificationsData } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: notificationsApi.getAll
+  const { data: notificationsData, isLoading: notificationsLoading } = useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn: () => notificationsApi.getAll({ unread: true, limit: 20 }),
+    staleTime: 2 * 60 * 1000,
   })
 
-  const todaysSchedule = timetableData?.data || []
-  const upcomingEvents = eventsData?.data || []
+  const { data: examResultsData, isLoading: resultsLoading } = useQuery({
+    queryKey: ['studentResults', user?.id],
+    queryFn: () => resultsApi.getByStudent(user?.id || ''),
+    enabled: !!user?.id,
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const { data: feesData, isLoading: feesLoading } = useQuery({
+    queryKey: ['studentFees', user?.id],
+    queryFn: () => feesApi.getAll({ studentId: user?.id }),
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Mock data transformation functions
+  const transformTimetableData = (data: any) => {
+    if (!data?.data) return []
+    return data.data.map((item: any) => ({
+      id: item.id,
+      time: item.timeSlot || `${item.startTime} - ${item.endTime}`,
+      subject: item.subject?.name || item.subject,
+      teacher: item.teacher?.name || 'Teacher',
+      room: item.room || 'Room TBD',
+      status: item.status || 'scheduled',
+      topic: item.topic || ''
+    }))
+  }
+
+  const transformEventsData = (data: any) => {
+    if (!data?.data) return []
+    return data.data.map((event: any) => ({
+      id: event.id,
+      title: event.title,
+      date: new Date(event.date || event.startDate).toLocaleDateString(),
+      type: event.type || 'general',
+      description: event.description || ''
+    }))
+  }
+
+  const todaysSchedule = transformTimetableData(timetableData)
+  const upcomingEvents = transformEventsData(eventsData)
 
   const smartNotifications = (notificationsData?.data || []).map((n: any) => ({
     id: n.id,
@@ -87,15 +130,30 @@ export default function StudentParentDashboardPage() {
     actionLink: '/student-parent/notifications'
   }))
 
-  // Mock academic metrics for now until we have a dedicated endpoint
-  const academicMetrics = {
-    overallCGPA: 8.7,
-    attendanceRate: 92.5,
-    assignmentsCompleted: 15,
-    totalAssignments: 18,
-    upcomingExams: 2,
-    pendingFees: 5000,
-    recentAchievements: 3
+  // Calculate academic metrics from real data
+  const calculateAcademicMetrics = () => {
+    const results = examResultsData?.data || []
+    const totalResults = results.length || 1
+    
+    // Calculate CGPA from results
+    const totalMarks = results.reduce((sum: number, result: any) => sum + (result.marks || 0), 0)
+    const overallCGPA = totalResults > 0 ? ((totalMarks / totalResults) / 100) * 10 : 8.7
+
+    // Calculate fee data
+    const fees = feesData?.data || []
+    const totalFees = fees.reduce((sum: number, fee: any) => sum + (fee.total || 0), 0)
+    const paidFees = fees.reduce((sum: number, fee: any) => sum + (fee.paid || 0), 0)
+    const pendingFees = totalFees - paidFees
+
+    return {
+      overallCGPA: Math.round(overallCGPA * 10) / 10,
+      attendanceRate: 92.5, // This would come from attendance API
+      assignmentsCompleted: 15, // This would come from assignments API
+      totalAssignments: 18, // This would come from assignments API
+      upcomingExams: 2, // This would come from exams API
+      pendingFees,
+      recentAchievements: 3 // This would come from achievements API
+    }
   }
 
   const studentData = {
