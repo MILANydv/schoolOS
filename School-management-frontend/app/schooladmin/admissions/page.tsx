@@ -29,7 +29,7 @@ import {
 import { format } from "date-fns"
 import { EnhancedTable } from "@/components/table/enhanced-table"
 import { useSchoolAdmin } from "@/hooks/useSchoolAdmin"
-import { admissionsApi } from "@/lib/api"
+import { admissionsApi, studentsApi } from "@/lib/api"
 
 interface Admission {
   id: string
@@ -137,6 +137,7 @@ export default function SchoolAdminAdmissionsPage() {
   // Modal form state
   const [form, setForm] = React.useState<Partial<Admission>>({})
   const [formError, setFormError] = React.useState("")
+  const [importModal, setImportModal] = React.useState<{ admission: Admission | null; classId: string; rollNumber: string; section: string } | null>(null)
 
   const openAddModal = () => {
     setEditingAdmission(null)
@@ -159,20 +160,41 @@ export default function SchoolAdminAdmissionsPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.applicantName || !form.gradeApplyingFor || !form.applicationDate || !form.status || !form.contact) {
-      setFormError("All fields are required.")
+    if (!form.applicantName || !form.gradeApplyingFor || !form.applicationDate || !form.status) {
+      setFormError("Please fill in all required fields.")
       return
     }
 
     try {
+      // Transform form data to match backend API
+      const admissionData = {
+        applicantName: form.applicantName,
+        gradeApplyingFor: form.gradeApplyingFor,
+        applicationDate: form.applicationDate,
+        status: form.status,
+        parentPhone: form.parentPhone,
+        dateOfBirth: form.dateOfBirth,
+        gender: form.gender,
+        parentName: form.parentName,
+        parentEmail: form.parentEmail,
+        address: form.address,
+        previousSchool: form.previousSchool,
+        documents: form.documents || {},
+        interviewDate: form.interviewDate,
+        interviewNotes: form.interviewNotes,
+        admissionFee: form.admissionFee,
+        notes: form.notes,
+        statusHistory: form.statusHistory || []
+      }
+
       if (editingAdmission) {
-        const response = await admissionsApi.update(editingAdmission.id, form)
+        const response = await admissionsApi.update(editingAdmission.id, admissionData)
         if (response.success) {
           updateAdmission(editingAdmission.id, response.data)
           toast({ title: "Admission Updated", description: `${form.applicantName} updated.` })
         }
       } else {
-        const response = await admissionsApi.create(form)
+        const response = await admissionsApi.create(admissionData)
         if (response.success) {
           addAdmission(response.data)
           toast({ title: "Admission Added", description: `${form.applicantName} added.` })
@@ -238,6 +260,45 @@ export default function SchoolAdminAdmissionsPage() {
   // Detailed view modal
   const openDetailModal = (admission: Admission) => setDetailModal(admission)
   const closeDetailModal = () => setDetailModal(null)
+
+  // Import student from admission
+  const handleImportStudent = async (admission: Admission) => {
+    setImportModal({
+      admission,
+      classId: "",
+      rollNumber: "",
+      section: "A"
+    })
+  }
+
+  const handleImportSubmit = async () => {
+    if (!importModal || !importModal.admission) return
+
+    try {
+      const response = await studentsApi.importFromAdmission(importModal.admission.id, {
+        classId: importModal.classId,
+        rollNumber: importModal.rollNumber,
+        section: importModal.section
+      })
+
+      if (response.success) {
+        toast({ 
+          title: "Student Imported", 
+          description: `Student ${importModal.admission.applicantName} imported successfully with admission number: ${response.data.student.admissionNumber}` 
+        })
+        setImportModal(null)
+      }
+    } catch (error) {
+      console.error("Failed to import student:", error)
+      toast({ 
+        title: "Import Failed", 
+        description: "Failed to import student from admission", 
+        variant: "destructive" 
+      })
+    }
+  }
+
+  const closeImportModal = () => setImportModal(null)
 
   return (
     <div className="w-full">
@@ -607,6 +668,13 @@ export default function SchoolAdminAdmissionsPage() {
               onClick: openEditModal
             },
             {
+              key: "import",
+              label: "Import Student",
+              icon: <Plus className="h-4 w-4" />,
+              onClick: handleImportStudent,
+              disabled: (item) => item.status !== "Approved"
+            },
+            {
               key: "contact",
               label: "Contact",
               icon: <Mail className="h-4 w-4" />,
@@ -705,91 +773,289 @@ export default function SchoolAdminAdmissionsPage() {
             <DialogTitle>{editingAdmission ? "Edit Application" : "Add Application"}</DialogTitle>
           </DialogHeader>
           <form className="grid gap-4" onSubmit={handleFormSubmit}>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Applicant Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter applicant name"
-                  value={form.applicantName || ""}
-                  onChange={e => handleFormChange("applicantName", e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {/* Basic Information Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Basic Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Applicant Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Enter full name"
+                      value={form.applicantName || ""}
+                      onChange={e => handleFormChange("applicantName", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Grade Applying For <span className="text-red-500">*</span></label>
+                    <select
+                      value={form.gradeApplyingFor || ""}
+                      onChange={e => handleFormChange("gradeApplyingFor", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select Grade</option>
+                      {MOCK_CLASSES.map(c => (
+                        <option key={c.grade} value={c.grade}>Grade {c.grade}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Application Date <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      value={form.applicationDate || ""}
+                      onChange={e => handleFormChange("applicationDate", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Status <span className="text-red-500">*</span></label>
+                    <select
+                      value={form.status || "Pending"}
+                      onChange={e => handleFormChange("status", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Under Review">Under Review</option>
+                      <option value="Interview Scheduled">Interview Scheduled</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Waitlisted">Waitlisted</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Grade Applying For</label>
-                <select
-                  value={form.gradeApplyingFor || ""}
-                  onChange={e => handleFormChange("gradeApplyingFor", e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  required
-                >
-                  <option value="">Select Grade</option>
-                  {MOCK_CLASSES.map(c => (
-                    <option key={c.grade} value={c.grade}>{c.grade}</option>
-                  ))}
-                </select>
+              {/* Personal Information Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Personal Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={form.dateOfBirth || ""}
+                      onChange={e => handleFormChange("dateOfBirth", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Gender</label>
+                    <select
+                      value={form.gender || ""}
+                      onChange={e => handleFormChange("gender", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Application Date</label>
-                <input
-                  type="date"
-                  value={form.applicationDate || ""}
-                  onChange={e => handleFormChange("applicationDate", e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
+              {/* Parent/Guardian Information Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Parent/Guardian Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Parent/Guardian Name</label>
+                    <input
+                      type="text"
+                      placeholder="Enter parent/guardian name"
+                      value={form.parentName || ""}
+                      onChange={e => handleFormChange("parentName", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Parent Phone <span className="text-red-500">*</span></label>
+                    <input
+                      type="tel"
+                      placeholder="Enter parent phone number"
+                      value={form.parentPhone || ""}
+                      onChange={e => handleFormChange("parentPhone", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Parent Email</label>
+                    <input
+                      type="email"
+                      placeholder="Enter parent email"
+                      value={form.parentEmail || ""}
+                      onChange={e => handleFormChange("parentEmail", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Status</label>
-                <select
-                  value={form.status || "Pending"}
-                  onChange={e => handleFormChange("status", e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  required
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
-                  <option value="Waitlisted">Waitlisted</option>
-                  <option value="Under Review">Under Review</option>
-                </select>
+              {/* Additional Information Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Additional Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Address</label>
+                    <textarea
+                      placeholder="Enter complete address"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 min-h-[60px]"
+                      value={form.address || ""}
+                      onChange={e => handleFormChange("address", e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Previous School</label>
+                    <input
+                      type="text"
+                      placeholder="Enter previous school name"
+                      value={form.previousSchool || ""}
+                      onChange={e => handleFormChange("previousSchool", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Admission Fee</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Enter admission fee"
+                      value={form.admissionFee || ""}
+                      onChange={e => handleFormChange("admissionFee", e.target.value ? parseFloat(e.target.value) : "")}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="text-sm font-medium">Contact Email/Phone</label>
-                <input
-                  type="text"
-                  placeholder="Enter email or phone"
-                  value={form.contact || ""}
-                  onChange={e => handleFormChange("contact", e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                  required
-                />
+              {/* Interview Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Interview Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Interview Date</label>
+                    <input
+                      type="datetime-local"
+                      value={form.interviewDate || ""}
+                      onChange={e => handleFormChange("interviewDate", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Interview Notes</label>
+                    <textarea
+                      placeholder="Enter interview notes and observations"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 min-h-[60px]"
+                      value={form.interviewNotes || ""}
+                      onChange={e => handleFormChange("interviewNotes", e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
+              {/* Notes Section */}
               <div>
-                <label className="text-sm font-medium">Notes/Comments</label>
-                <textarea
-                  placeholder="Enter any additional notes"
-                  className="w-full p-2 border rounded-md min-h-[60px]"
-                  value={form.notes || ""}
-                  onChange={e => handleFormChange("notes", e.target.value)}
-                />
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Additional Notes</h3>
+                <div>
+                  <label className="text-sm font-medium">Notes/Comments</label>
+                  <textarea
+                    placeholder="Enter any additional notes or comments"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 min-h-[60px]"
+                    value={form.notes || ""}
+                    onChange={e => handleFormChange("notes", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
 
-            {formError && <div className="text-red-600 text-sm">{formError}</div>}
+            {formError && <div className="text-red-600 text-sm p-2 bg-red-50 rounded-md">{formError}</div>}
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
               <Button type="submit">{editingAdmission ? "Save Changes" : "Add Application"}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Student Modal */}
+      <Dialog open={!!importModal} onOpenChange={setImportModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Student from Admission</DialogTitle>
+            <DialogDescription>
+              {importModal?.admission && (
+                <span>Import {importModal.admission.applicantName} as a student</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {importModal?.admission && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Class ID</label>
+                <input
+                  type="text"
+                  value={importModal.classId}
+                  onChange={(e) => setImportModal(prev => prev ? { ...prev, classId: e.target.value } : null)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Enter class ID"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Roll Number</label>
+                <input
+                  type="text"
+                  value={importModal.rollNumber}
+                  onChange={(e) => setImportModal(prev => prev ? { ...prev, rollNumber: e.target.value } : null)}
+                  className="w-full p-2 border rounded-md"
+                  placeholder="Enter roll number"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Section</label>
+                <select
+                  value={importModal.section}
+                  onChange={(e) => setImportModal(prev => prev ? { ...prev, section: e.target.value } : null)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+              <div className="text-sm text-gray-600">
+                <p>Admission Number: {importModal.admission.admissionNumber || 'Auto-generated'}</p>
+                <p>Parent Contact: {importModal.admission.contact}</p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={closeImportModal}>Cancel</Button>
+                <Button 
+                  type="button" 
+                  onClick={handleImportSubmit}
+                  disabled={!importModal.classId || !importModal.rollNumber}
+                >
+                  Import Student
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

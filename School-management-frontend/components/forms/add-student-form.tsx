@@ -9,6 +9,8 @@ import { FormDatePicker } from "@/components/forms/form-date-picker"
 import { MOCK_CLASSES } from "@/lib/constants"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // Types
 type EmergencyContact = {
@@ -31,6 +33,7 @@ export interface StudentFormData {
   addressZip: string;
   class: string;
   rollNumber: string;
+  admissionNumber?: string;
   parentName: string;
   parentContact: string;
   parentEmail: string;
@@ -84,14 +87,44 @@ const Step1Personal: React.FC<StepComponentProps> = ({ initialData = {}, onNext,
   return (
     <form onSubmit={handleSubmit} className="grid gap-6 animate-fade-in">
       <div className="grid md:grid-cols-2 gap-4">
-        <FormInput id="firstName" label="First Name" value={firstName} onChange={(e) => { setFirstName(e.target.value); setErrors((prev) => ({ ...prev, firstName: "" })) }} error={errors.firstName} required aria-label="First Name" />
-        <FormInput id="lastName" label="Last Name" value={lastName} onChange={(e) => { setLastName(e.target.value); setErrors((prev) => ({ ...prev, lastName: "" })) }} error={errors.lastName} required aria-label="Last Name" />
+        <div className="grid gap-2">
+          <Label htmlFor="firstName">First Name <span className="text-red-500">*</span></Label>
+          <Input id="firstName" value={firstName} onChange={(e) => { setFirstName(e.target.value); setErrors((prev) => ({ ...prev, firstName: "" })) }} className={errors.firstName ? "border-destructive" : ""} required />
+          {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="lastName">Last Name <span className="text-red-500">*</span></Label>
+          <Input id="lastName" value={lastName} onChange={(e) => { setLastName(e.target.value); setErrors((prev) => ({ ...prev, lastName: "" })) }} className={errors.lastName ? "border-destructive" : ""} required />
+          {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+        </div>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        <FormDatePicker id="dateOfBirth" label="Date of Birth" selectedDate={dateOfBirth} onSelectDate={(date) => { setDateOfBirth(date); setErrors((prev) => ({ ...prev, dateOfBirth: "" })) }} error={errors.dateOfBirth} aria-label="Date of Birth" />
-        <FormSelect id="gender" label="Gender" value={gender} onValueChange={(value) => { setGender(value); setErrors((prev) => ({ ...prev, gender: "" })) }} options={[{ value: "Male", label: "Male" }, { value: "Female", label: "Female" }, { value: "Other", label: "Other" }]} error={errors.gender} required aria-label="Gender" />
+        <div className="grid gap-2">
+          <Label htmlFor="dateOfBirth">Date of Birth <span className="text-red-500">*</span></Label>
+          <Input id="dateOfBirth" type="date" value={dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : ''} onChange={(e) => { setDateOfBirth(e.target.value ? new Date(e.target.value) : undefined); setErrors((prev) => ({ ...prev, dateOfBirth: "" })) }} className={errors.dateOfBirth ? "border-destructive" : ""} required />
+          {errors.dateOfBirth && <p className="text-sm text-destructive">{errors.dateOfBirth}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="gender">Gender <span className="text-red-500">*</span></Label>
+          <select id="gender" value={gender} onChange={(e) => { setGender(e.target.value); setErrors((prev) => ({ ...prev, gender: "" })) }} className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.gender ? "border-destructive" : ""}`} required>
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+        </div>
       </div>
-      <FormSelect id="bloodGroup" label="Blood Group" value={bloodGroup} onValueChange={setBloodGroup} options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => ({ value: bg, label: bg }))} error={errors.bloodGroup} required aria-label="Blood Group" />
+      <div className="grid gap-2">
+        <Label htmlFor="bloodGroup">Blood Group <span className="text-red-500">*</span></Label>
+        <select id="bloodGroup" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.bloodGroup ? "border-destructive" : ""}`} required>
+          <option value="">Select Blood Group</option>
+          {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bg => (
+            <option key={bg} value={bg}>{bg}</option>
+          ))}
+        </select>
+        {errors.bloodGroup && <p className="text-sm text-destructive">{errors.bloodGroup}</p>}
+      </div>
       <div className="flex justify-end mt-4 gap-2">
         <Button type="submit" className="w-full md:w-auto bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 transition">Next</Button>
       </div>
@@ -144,21 +177,57 @@ const Step2Contact: React.FC<StepComponentProps> = ({ initialData = {}, onNext, 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6 animate-fade-in">
       <div className="grid md:grid-cols-2 gap-4">
-        <FormInput id="email" label="Email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((prev) => ({ ...prev, email: "" })) }} error={errors.email} required aria-label="Email" />
-        <FormInput id="phone" label="Phone Number" type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((prev) => ({ ...prev, phone: "" })) }} error={errors.phone} required aria-label="Phone Number" />
+        <div className="grid gap-2">
+          <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
+          <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setErrors((prev) => ({ ...prev, email: "" })) }} className={errors.email ? "border-destructive" : ""} required />
+          {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
+          <Input id="phone" type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); setErrors((prev) => ({ ...prev, phone: "" })) }} className={errors.phone ? "border-destructive" : ""} required />
+          {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+        </div>
       </div>
       <div className="grid md:grid-cols-4 gap-4">
-        <FormInput id="addressStreet" label="Street Address" value={addressStreet} onChange={(e) => { setAddressStreet(e.target.value); setErrors((prev) => ({ ...prev, addressStreet: "" })) }} error={errors.addressStreet} required aria-label="Street Address" />
-        <FormInput id="addressCity" label="City" value={addressCity} onChange={(e) => { setAddressCity(e.target.value); setErrors((prev) => ({ ...prev, addressCity: "" })) }} error={errors.addressCity} required aria-label="City" />
-        <FormInput id="addressState" label="State" value={addressState} onChange={(e) => { setAddressState(e.target.value); setErrors((prev) => ({ ...prev, addressState: "" })) }} error={errors.addressState} required aria-label="State" />
-        <FormInput id="addressZip" label="Zip/Postal Code" value={addressZip} onChange={(e) => { setAddressZip(e.target.value); setErrors((prev) => ({ ...prev, addressZip: "" })) }} error={errors.addressZip} required aria-label="Zip/Postal Code" />
+        <div className="grid gap-2">
+          <Label htmlFor="addressStreet">Street Address <span className="text-red-500">*</span></Label>
+          <Input id="addressStreet" value={addressStreet} onChange={(e) => { setAddressStreet(e.target.value); setErrors((prev) => ({ ...prev, addressStreet: "" })) }} className={errors.addressStreet ? "border-destructive" : ""} required />
+          {errors.addressStreet && <p className="text-sm text-destructive">{errors.addressStreet}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="addressCity">City <span className="text-red-500">*</span></Label>
+          <Input id="addressCity" value={addressCity} onChange={(e) => { setAddressCity(e.target.value); setErrors((prev) => ({ ...prev, addressCity: "" })) }} className={errors.addressCity ? "border-destructive" : ""} required />
+          {errors.addressCity && <p className="text-sm text-destructive">{errors.addressCity}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="addressState">State <span className="text-red-500">*</span></Label>
+          <Input id="addressState" value={addressState} onChange={(e) => { setAddressState(e.target.value); setErrors((prev) => ({ ...prev, addressState: "" })) }} className={errors.addressState ? "border-destructive" : ""} required />
+          {errors.addressState && <p className="text-sm text-destructive">{errors.addressState}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="addressZip">Zip/Postal Code <span className="text-red-500">*</span></Label>
+          <Input id="addressZip" value={addressZip} onChange={(e) => { setAddressZip(e.target.value); setErrors((prev) => ({ ...prev, addressZip: "" })) }} className={errors.addressZip ? "border-destructive" : ""} required />
+          {errors.addressZip && <p className="text-sm text-destructive">{errors.addressZip}</p>}
+        </div>
       </div>
       <div className="border-t pt-4 mt-2 rounded-xl bg-blue-50/50 p-4">
         <div className="font-semibold mb-2">Emergency Contact <span className="text-muted-foreground text-xs">(in case parent/guardian is unreachable)</span></div>
         <div className="grid md:grid-cols-3 gap-4">
-          <FormInput id="emergencyName" label="Name" value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setErrors((prev) => ({ ...prev, emergencyName: "" })) }} error={errors.emergencyName} required aria-label="Emergency Contact Name" />
-          <FormInput id="emergencyPhone" label="Phone Number" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value); setErrors((prev) => ({ ...prev, emergencyPhone: "" })) }} error={errors.emergencyPhone} required aria-label="Emergency Contact Phone" />
-          <FormInput id="emergencyRelationship" label="Relationship" value={emergencyRelationship} onChange={(e) => { setEmergencyRelationship(e.target.value); setErrors((prev) => ({ ...prev, emergencyRelationship: "" })) }} error={errors.emergencyRelationship} required aria-label="Emergency Contact Relationship" />
+          <div className="grid gap-2">
+            <Label htmlFor="emergencyName">Name <span className="text-red-500">*</span></Label>
+            <Input id="emergencyName" value={emergencyName} onChange={(e) => { setEmergencyName(e.target.value); setErrors((prev) => ({ ...prev, emergencyName: "" })) }} className={errors.emergencyName ? "border-destructive" : ""} required />
+            {errors.emergencyName && <p className="text-sm text-destructive">{errors.emergencyName}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="emergencyPhone">Phone Number <span className="text-red-500">*</span></Label>
+            <Input id="emergencyPhone" value={emergencyPhone} onChange={(e) => { setEmergencyPhone(e.target.value); setErrors((prev) => ({ ...prev, emergencyPhone: "" })) }} className={errors.emergencyPhone ? "border-destructive" : ""} required />
+            {errors.emergencyPhone && <p className="text-sm text-destructive">{errors.emergencyPhone}</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="emergencyRelationship">Relationship <span className="text-red-500">*</span></Label>
+            <Input id="emergencyRelationship" value={emergencyRelationship} onChange={(e) => { setEmergencyRelationship(e.target.value); setErrors((prev) => ({ ...prev, emergencyRelationship: "" })) }} className={errors.emergencyRelationship ? "border-destructive" : ""} required />
+            {errors.emergencyRelationship && <p className="text-sm text-destructive">{errors.emergencyRelationship}</p>}
+          </div>
         </div>
       </div>
       <div className="flex justify-between mt-4 gap-2">
@@ -172,6 +241,7 @@ const Step2Contact: React.FC<StepComponentProps> = ({ initialData = {}, onNext, 
 const Step3Academic: React.FC<StepComponentProps> = ({ initialData = {}, onNext, onBack }) => {
   const [cls, setCls] = React.useState(initialData.class || "")
   const [rollNumber, setRollNumber] = React.useState(initialData.rollNumber || "")
+  const [admissionNumber, setAdmissionNumber] = React.useState(initialData.admissionNumber || "")
   const [admissionDate, setAdmissionDate] = React.useState<Date | undefined>(initialData.admissionDate)
   const [errors, setErrors] = React.useState<Record<string, string>>({})
 
@@ -189,16 +259,40 @@ const Step3Academic: React.FC<StepComponentProps> = ({ initialData = {}, onNext,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validate()) {
-      onNext({ class: cls, rollNumber, admissionDate })
+      onNext({ class: cls, rollNumber, admissionNumber, admissionDate })
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6 animate-fade-in">
-      <div className="grid md:grid-cols-3 gap-4">
-        <FormSelect id="class" label="Assign Class" value={cls} onValueChange={(value) => { setCls(value); setErrors((prev) => ({ ...prev, class: "" })) }} options={classOptions} placeholder="Select a class" error={errors.class} required aria-label="Class" />
-        <FormInput id="rollNumber" label="Roll Number" value={rollNumber} onChange={(e) => { setRollNumber(e.target.value); setErrors((prev) => ({ ...prev, rollNumber: "" })) }} error={errors.rollNumber} required aria-label="Roll Number" />
-        <FormDatePicker id="admissionDate" label="Admission Date" selectedDate={admissionDate} onSelectDate={(date) => { setAdmissionDate(date); setErrors((prev) => ({ ...prev, admissionDate: "" })) }} error={errors.admissionDate} aria-label="Admission Date" />
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="class">Assign Class <span className="text-red-500">*</span></Label>
+          <select id="class" value={cls} onChange={(e) => { setCls(e.target.value); setErrors((prev) => ({ ...prev, class: "" })) }} className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.class ? "border-destructive" : ""}`} required>
+            <option value="">Select a class</option>
+            {classOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          {errors.class && <p className="text-sm text-destructive">{errors.class}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="rollNumber">Roll Number <span className="text-red-500">*</span></Label>
+          <Input id="rollNumber" value={rollNumber} onChange={(e) => { setRollNumber(e.target.value); setErrors((prev) => ({ ...prev, rollNumber: "" })) }} className={errors.rollNumber ? "border-destructive" : ""} required />
+          {errors.rollNumber && <p className="text-sm text-destructive">{errors.rollNumber}</p>}
+        </div>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="admissionNumber">Admission Number</Label>
+          <Input id="admissionNumber" value={admissionNumber} onChange={(e) => setAdmissionNumber(e.target.value)} placeholder="Auto-generated if left blank" />
+          <p className="text-xs text-muted-foreground">Leave empty to auto-generate</p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="admissionDate">Admission Date <span className="text-red-500">*</span></Label>
+          <Input id="admissionDate" type="date" value={admissionDate ? admissionDate.toISOString().split('T')[0] : ''} onChange={(e) => { setAdmissionDate(e.target.value ? new Date(e.target.value) : undefined); setErrors((prev) => ({ ...prev, admissionDate: "" })) }} className={errors.admissionDate ? "border-destructive" : ""} required />
+          {errors.admissionDate && <p className="text-sm text-destructive">{errors.admissionDate}</p>}
+        </div>
       </div>
       <div className="flex justify-between mt-4 gap-2">
         <Button type="button" variant="outline" onClick={onBack} className="w-full md:w-auto">Back</Button>
@@ -233,9 +327,21 @@ const Step4Parent: React.FC<StepComponentProps> = ({ initialData = {}, onNext, o
   return (
     <form onSubmit={handleSubmit} className="grid gap-6 animate-fade-in">
       <div className="grid md:grid-cols-3 gap-4">
-        <FormInput id="parentName" label="Parent/Guardian Name" value={parentName} onChange={(e) => { setParentName(e.target.value); setErrors((prev) => ({ ...prev, parentName: "" })) }} error={errors.parentName} required aria-label="Parent/Guardian Name" />
-        <FormInput id="parentContact" label="Parent/Guardian Contact" type="tel" value={parentContact} onChange={(e) => { setParentContact(e.target.value); setErrors((prev) => ({ ...prev, parentContact: "" })) }} error={errors.parentContact} required aria-label="Parent/Guardian Contact" />
-        <FormInput id="parentEmail" label="Parent/Guardian Email" type="email" value={parentEmail} onChange={(e) => { setParentEmail(e.target.value); setErrors((prev) => ({ ...prev, parentEmail: "" })) }} error={errors.parentEmail} required aria-label="Parent/Guardian Email" />
+        <div className="grid gap-2">
+          <Label htmlFor="parentName">Parent/Guardian Name <span className="text-red-500">*</span></Label>
+          <Input id="parentName" value={parentName} onChange={(e) => { setParentName(e.target.value); setErrors((prev) => ({ ...prev, parentName: "" })) }} className={errors.parentName ? "border-destructive" : ""} required />
+          {errors.parentName && <p className="text-sm text-destructive">{errors.parentName}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="parentContact">Parent/Guardian Contact <span className="text-red-500">*</span></Label>
+          <Input id="parentContact" type="tel" value={parentContact} onChange={(e) => { setParentContact(e.target.value); setErrors((prev) => ({ ...prev, parentContact: "" })) }} className={errors.parentContact ? "border-destructive" : ""} required />
+          {errors.parentContact && <p className="text-sm text-destructive">{errors.parentContact}</p>}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="parentEmail">Parent/Guardian Email <span className="text-red-500">*</span></Label>
+          <Input id="parentEmail" type="email" value={parentEmail} onChange={(e) => { setParentEmail(e.target.value); setErrors((prev) => ({ ...prev, parentEmail: "" })) }} className={errors.parentEmail ? "border-destructive" : ""} required />
+          {errors.parentEmail && <p className="text-sm text-destructive">{errors.parentEmail}</p>}
+        </div>
       </div>
       <div className="flex justify-between mt-4 gap-2">
         <Button type="button" variant="outline" onClick={onBack} className="w-full md:w-auto">Back</Button>
@@ -251,7 +357,7 @@ export function AddStudentForm({ isOpen = true, onClose, onSuccess, mode = 'page
   const [formData, setFormData] = React.useState<Partial<StudentFormData>>(initialData || {})
   const totalSteps = 4
 
-  const handleFinish = (data: Partial<StudentFormData>) => {
+  const handleFinish = async (data: Partial<StudentFormData>) => {
     // Combine all form data
     const completeData = { ...formData, ...data }
     
@@ -276,23 +382,58 @@ export function AddStudentForm({ isOpen = true, onClose, onSuccess, mode = 'page
 
     // All required fields present
     const studentData = completeData as StudentFormData
-    console.log(isEditing ? "Student Updated:" : "Student Added:", studentData)
     
-    toast({
-      title: isEditing ? "Student Updated!" : "Student Added!",
-      description: isEditing 
-        ? `${studentData.firstName} ${studentData.lastName} has been updated successfully.`
-        : `${studentData.firstName} ${studentData.lastName} has been added successfully.`,
-    })
+    try {
+      // Convert data to match backend API
+      const backendData = {
+        firstName: studentData.firstName,
+        lastName: studentData.lastName,
+        email: studentData.email,
+        phone: studentData.phone,
+        dateOfBirth: studentData.dateOfBirth?.toISOString(),
+        gender: studentData.gender,
+        classId: studentData.class, // Assuming class name maps to ID or needs conversion
+        section: "A", // Default section
+        rollNumber: studentData.rollNumber,
+        admissionNumber: studentData.admissionNumber,
+        admissionDate: studentData.admissionDate?.toISOString(),
+        parentName: studentData.parentName,
+        parentPhone: studentData.parentContact,
+        parentEmail: studentData.parentEmail,
+        address: `${studentData.addressStreet}, ${studentData.addressCity}, ${studentData.addressState} ${studentData.addressZip}`,
+        addressStreet: studentData.addressStreet,
+        addressCity: studentData.addressCity,
+        addressState: studentData.addressState,
+        addressZip: studentData.addressZip,
+        bloodGroup: studentData.bloodGroup,
+        emergencyName: studentData.emergencyContact.name,
+        emergencyPhone: studentData.emergencyContact.phone,
+        emergencyRelationship: studentData.emergencyContact.relationship
+      }
 
-    // Call success callback
-    if (onSuccess) {
-      onSuccess(studentData)
-    }
+      // Call success callback with backend data
+      if (onSuccess) {
+        onSuccess(backendData)
+      }
 
-    // Close modal if in modal mode
-    if (mode === 'modal' && onClose) {
-      onClose()
+      toast({
+        title: isEditing ? "Student Updated!" : "Student Added!",
+        description: isEditing 
+          ? `${studentData.firstName} ${studentData.lastName} has been updated successfully.`
+          : `${studentData.firstName} ${studentData.lastName} has been added successfully.`,
+      })
+
+      // Close modal if in modal mode
+      if (mode === 'modal' && onClose) {
+        onClose()
+      }
+    } catch (error) {
+      console.error('Failed to create student:', error)
+      toast({
+        title: "Error",
+        description: "Failed to save student data. Please try again.",
+        variant: "destructive"
+      })
     }
   }
 

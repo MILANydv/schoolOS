@@ -71,20 +71,21 @@ router.post('/', authMiddleware, checkPermission('manage_admissions'), async (re
         gradeApplyingFor,
         applicationDate: applicationDate ? new Date(applicationDate) : new Date(),
         status: status || 'Pending',
-        parentPhone,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        parentPhone: parentPhone || null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         gender,
         parentName,
         parentEmail,
         address,
         previousSchool,
         documents: documents || {},
-        interviewDate: interviewDate ? new Date(interviewDate) : undefined,
+        interviewDate: interviewDate ? new Date(interviewDate) : null,
         interviewNotes,
         admissionFee,
         admissionFeePaid: false,
         notes,
-        statusHistory: statusHistory || []
+        statusHistory: statusHistory || [],
+        admissionNumber: `ADM${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
       }
     })
 
@@ -177,7 +178,7 @@ router.post('/:id/approve', authMiddleware, checkPermission('approve_admissions'
       })
     }
 
-    const admissionNumber = `ADM${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
+    const admissionNumber = admission.admissionNumber || `ADM${new Date().getFullYear()}${Math.floor(1000 + Math.random() * 9000)}`
     const studentEmail = admission.parentEmail || `${admissionNumber.toLowerCase()}@student.local`
 
     const hashedPassword = await bcrypt.hash(admission.dateOfBirth.toISOString().split('T')[0], 10)

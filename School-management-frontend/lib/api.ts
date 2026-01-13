@@ -82,6 +82,11 @@ export const studentsApi = {
         const response = await apiClient.delete(`/students/${id}`)
         return response.data
     },
+
+    importFromAdmission: async (admissionId: string, data: { classId: string; rollNumber: string; section?: string }) => {
+        const response = await apiClient.post(`/students/import-from-admission/${admissionId}`, data)
+        return response.data
+    },
 }
 
 // Classes API
