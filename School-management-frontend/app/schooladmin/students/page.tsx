@@ -2,8 +2,7 @@
 
 import * as React from "react"
 import { useStudents, useCreateStudent, useUpdateStudent, useDeleteStudent } from "@/hooks"
-import { useQueryClient } from "@tanstack/react-query"
-import { queryKeys } from "@/lib/query-keys"
+import type { CreateStudentPayload } from "@/lib/api-types"
 import {
   Edit,
   Trash2,
@@ -57,10 +56,42 @@ import {
 import { EnhancedTable, TableColumn, TableFilter, TableAction } from "@/components/table/enhanced-table"
 import { useToast } from "@/components/ui/use-toast"
 
-// Use the type from MOCK_STUDENTS and create a compatible type for EnhancedTable
-type Student = any
+type Student = {
+  id: string
+  firstName: string
+  lastName: string
+  email?: string | null
+  phone?: string | null
+  rollNumber: string
+  gender: string
+  dateOfBirth: string
+  admissionDate: string
+  admissionNumber?: string | null
+  status: string
+  bloodGroup?: string | null
 
-type TableStudent = Student & { [key: string]: any }
+  parentName: string
+  parentPhone: string
+  parentEmail: string
+
+  addressStreet: string
+  addressCity: string
+  addressState: string
+  addressZip: string
+
+  emergencyName: string
+  emergencyPhone: string
+
+  class?: {
+    id: string
+    name: string
+    grade: string
+    section: string
+  }
+}
+
+const getStudentName = (student: Student) => `${student.firstName} ${student.lastName}`.trim()
+const getStudentClassName = (student: Student) => student.class?.name || "—"
 
 interface StudentStats {
   total: number
@@ -76,7 +107,6 @@ interface StudentStats {
 }
 
 export default function SchoolAdminStudentsPage() {
-  const queryClient = useQueryClient()
   const { toast } = useToast()
 
   // Pagination state moved up for better scope access
@@ -103,16 +133,18 @@ export default function SchoolAdminStudentsPage() {
 
   // Apply local filtering with enhanced logic
   const filteredStudents = React.useMemo(() => {
-    return students.filter(student => {
-      // Search filter - enhanced to include more fields
+    return students.filter((student: Student) => {
       const searchTerm = localSearch.toLowerCase().trim()
+      const fullName = getStudentName(student).toLowerCase()
+
       const matchesSearch = !searchTerm ||
-        student.name.toLowerCase().includes(searchTerm) ||
-        student.email.toLowerCase().includes(searchTerm) ||
-        student.class?.name?.toLowerCase().includes(searchTerm) ||
-        student.rollNumber?.toLowerCase().includes(searchTerm) ||
-        student.parentName?.toLowerCase().includes(searchTerm) ||
-        student.phone?.toLowerCase().includes(searchTerm)
+        fullName.includes(searchTerm) ||
+        (student.email || "").toLowerCase().includes(searchTerm) ||
+        (student.class?.name || "").toLowerCase().includes(searchTerm) ||
+        (student.rollNumber || "").toLowerCase().includes(searchTerm) ||
+        (student.parentName || "").toLowerCase().includes(searchTerm) ||
+        (student.phone || "").toLowerCase().includes(searchTerm) ||
+        (student.parentPhone || "").toLowerCase().includes(searchTerm)
 
       // Status filter
       const matchesStatus = !localFilters.status || localFilters.status === 'all' ||
@@ -149,14 +181,17 @@ export default function SchoolAdminStudentsPage() {
 
     // Show immediate feedback for search
     if (value.trim()) {
-      const matchingStudents = students.filter(student => {
+      const matchingStudents = students.filter((student: Student) => {
         const searchTerm = value.toLowerCase().trim()
-        return student.name.toLowerCase().includes(searchTerm) ||
-          student.email.toLowerCase().includes(searchTerm) ||
-          student.class?.name?.toLowerCase().includes(searchTerm) ||
-          student.rollNumber?.toLowerCase().includes(searchTerm) ||
-          student.parentName?.toLowerCase().includes(searchTerm) ||
-          student.phone?.toLowerCase().includes(searchTerm)
+        const fullName = getStudentName(student).toLowerCase()
+
+        return fullName.includes(searchTerm) ||
+          (student.email || "").toLowerCase().includes(searchTerm) ||
+          (student.class?.name || "").toLowerCase().includes(searchTerm) ||
+          (student.rollNumber || "").toLowerCase().includes(searchTerm) ||
+          (student.parentName || "").toLowerCase().includes(searchTerm) ||
+          (student.phone || "").toLowerCase().includes(searchTerm) ||
+          (student.parentPhone || "").toLowerCase().includes(searchTerm)
       })
 
       if (matchingStudents.length === 0) {
@@ -184,27 +219,22 @@ export default function SchoolAdminStudentsPage() {
 
   // Export functionality
   const handleExport = (format: 'csv' | 'excel' = 'csv') => {
-    const exportData = filteredStudents.map(student => ({
+    const exportData = filteredStudents.map((student: Student) => ({
       'Student ID': student.id,
-      'Name': student.name,
-      'Email': student.email,
-      'Phone': student.phone,
-      'Class': student.class,
+      'Name': getStudentName(student),
+      'Email': student.email || '',
+      'Phone': student.phone || '',
+      'Class': getStudentClassName(student),
       'Roll Number': student.rollNumber,
       'Gender': student.gender,
       'Date of Birth': student.dateOfBirth,
       'Admission Date': student.admissionDate,
+      'Admission Number': student.admissionNumber || '',
       'Status': student.status,
       'Parent Name': student.parentName,
-      'Parent Contact': student.parentContact,
+      'Parent Phone': student.parentPhone,
       'Parent Email': student.parentEmail,
-      'Address': student.address,
-      'Attendance': `${student.attendance}%`,
-      'Performance': `${student.performance}%`,
-      'Total Fees': `$${student.fees.total}`,
-      'Paid Fees': `$${student.fees.paid}`,
-      'Due Fees': `$${student.fees.due}`,
-      'Due Date': student.fees.dueDate
+      'Address': `${student.addressStreet}, ${student.addressCity}, ${student.addressState} ${student.addressZip}`,
     }))
 
     if (format === 'csv') {
@@ -248,10 +278,10 @@ export default function SchoolAdminStudentsPage() {
   // Calculate additional stats (could be moved to store later)
   const stats: StudentStats = React.useMemo(() => {
     const total = filteredStudents.length
-    const active = filteredStudents.filter(s => s.status === "Active").length
-    const inactive = filteredStudents.filter(s => s.status === "Inactive").length
-    const graduated = filteredStudents.filter(s => s.status === "Graduated").length
-    const suspended = filteredStudents.filter(s => s.status === "Suspended").length
+    const active = filteredStudents.filter(s => (s.status || '').toUpperCase() === "ACTIVE").length
+    const inactive = filteredStudents.filter(s => (s.status || '').toUpperCase() === "INACTIVE").length
+    const graduated = filteredStudents.filter(s => (s.status || '').toUpperCase() === "GRADUATED").length
+    const suspended = filteredStudents.filter(s => (s.status || '').toUpperCase() === "SUSPENDED").length
     const newThisMonth = filteredStudents.filter(s => {
       const admissionDate = new Date(s.admissionDate)
       const now = new Date()
@@ -270,9 +300,9 @@ export default function SchoolAdminStudentsPage() {
       suspended,
       newThisMonth,
       newThisYear,
-      averageAttendance: total > 0 ? Math.round(filteredStudents.reduce((sum, s) => sum + (s.attendance || 0), 0) / total) : 0,
-      topPerformers: filteredStudents.filter(s => (s.performance || 0) >= 90).length,
-      needsAttention: filteredStudents.filter(s => (s.attendance || 0) < 75 || (s.performance || 0) < 60).length
+      averageAttendance: 0,
+      topPerformers: 0,
+      needsAttention: 0
     }
   }, [filteredStudents])
 
@@ -293,7 +323,7 @@ export default function SchoolAdminStudentsPage() {
         window.location.href = `/schooladmin/students/identity-cards?studentId=${student.id}`
         break
       case "delete":
-        if (confirm(`Are you sure you want to delete ${student.name}?`)) {
+        if (confirm(`Are you sure you want to delete ${getStudentName(student)}?`)) {
           deleteStudentMutation.mutate(student.id)
         }
         break
@@ -301,7 +331,7 @@ export default function SchoolAdminStudentsPage() {
         window.open(`mailto:${student.parentEmail}`)
         break
       case "call":
-        window.open(`tel:${student.parentContact}`)
+        window.open(`tel:${student.parentPhone}`)
         break
     }
   }
@@ -327,7 +357,7 @@ export default function SchoolAdminStudentsPage() {
   }
 
   const handleDetailModalCall = (student: Student) => {
-    window.open(`tel:${student.parentContact}`)
+    window.open(`tel:${student.parentPhone}`)
   }
 
   // Enhanced actions for different scenarios
@@ -418,26 +448,8 @@ export default function SchoolAdminStudentsPage() {
               {/* Right Side - Actions */}
               <div className="flex items-center gap-3">
                 <AddStudentModal
-                  onSuccess={(studentData) => {
-                    // Map form data to API payload
-                    const apiPayload = {
-                      firstName: studentData.firstName,
-                      lastName: studentData.lastName,
-                      email: studentData.email,
-                      password: "password123", // Default password for now
-                      phone: studentData.phone,
-                      classId: studentData.class, // Assuming class is the ID
-                      rollNumber: studentData.rollNumber,
-                      gender: studentData.gender,
-                      dateOfBirth: studentData.dateOfBirth,
-                      admissionDate: studentData.admissionDate,
-                      parentName: studentData.parentName,
-                      parentContact: studentData.parentContact,
-                      parentEmail: studentData.parentEmail,
-                      bloodGroup: studentData.bloodGroup,
-                      address: `${studentData.addressStreet}, ${studentData.addressCity}, ${studentData.addressState} ${studentData.addressZip}`,
-                    }
-                    createStudentMutation.mutate(apiPayload)
+                  onSuccess={(payload: CreateStudentPayload) => {
+                    createStudentMutation.mutate(payload)
                   }}
                 />
 

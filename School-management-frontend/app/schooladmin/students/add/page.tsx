@@ -3,21 +3,19 @@
 import * as React from "react"
 import { AddStudentForm } from "@/components/forms/add-student-form"
 import { useRouter } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useCreateStudent } from "@/hooks"
+import type { CreateStudentPayload } from "@/lib/api-types"
 
 export default function AddStudentPage() {
   const router = useRouter()
-  const { toast } = useToast()
+  const createStudentMutation = useCreateStudent()
 
-  const handleSuccess = (studentData: any) => {
-    // Handle successful student addition
-    toast({
-      title: "Student Added Successfully!",
-      description: `${studentData.firstName} ${studentData.lastName} has been added to the system.`,
+  const handleSuccess = (payload: CreateStudentPayload) => {
+    createStudentMutation.mutate(payload, {
+      onSuccess: () => {
+        router.push("/schooladmin/students")
+      },
     })
-    
-    // Redirect to students list
-    router.push("/schooladmin/students")
   }
 
   return (

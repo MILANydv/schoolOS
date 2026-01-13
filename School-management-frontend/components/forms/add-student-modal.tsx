@@ -4,12 +4,12 @@ import * as React from "react"
 import { AddStudentForm } from "./add-student-form"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import type { CreateStudentPayload } from "@/lib/api-types"
 
 interface AddStudentModalProps {
   trigger?: React.ReactNode;
-  onSuccess?: (student: any) => void;
+  onSuccess?: (payload: CreateStudentPayload) => void;
   className?: string;
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
@@ -23,21 +23,12 @@ export function AddStudentModal({
   size = "default"
 }: AddStudentModalProps) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const { toast } = useToast()
 
-  const handleSuccess = (studentData: any) => {
-    // Show success toast
-    toast({
-      title: "Student Added Successfully!",
-      description: `${studentData.firstName} ${studentData.lastName} has been added to the system.`,
-    })
-
-    // Call parent success handler if provided
+  const handleSuccess = (studentData: CreateStudentPayload) => {
     if (onSuccess) {
       onSuccess(studentData)
     }
 
-    // Close modal
     setIsOpen(false)
   }
 

@@ -129,6 +129,11 @@ export const subjectsApi = {
         return response.data
     },
 
+    getByClass: async (classId: string) => {
+        const response = await apiClient.get(`/subjects/class/${classId}`)
+        return response.data
+    },
+
     create: async (data: any) => {
         const response = await apiClient.post('/subjects', data)
         return response.data
@@ -141,6 +146,16 @@ export const subjectsApi = {
 
     delete: async (id: string) => {
         const response = await apiClient.delete(`/subjects/${id}`)
+        return response.data
+    },
+
+    assignToClass: async (data: { classId: string; subjectId: string; teacherId?: string | null }) => {
+        const response = await apiClient.post('/subjects/class-subject', data)
+        return response.data
+    },
+
+    removeFromClass: async (classSubjectId: string) => {
+        const response = await apiClient.delete(`/subjects/class-subject/${classSubjectId}`)
         return response.data
     },
 }
@@ -528,8 +543,8 @@ export const admissionsApi = {
         return response.data
     },
 
-    approve: async (id: string) => {
-        const response = await apiClient.post(`/admissions/${id}/approve`)
+    approve: async (id: string, data: { classId: string; rollNumber: string; section?: string }) => {
+        const response = await apiClient.post(`/admissions/${id}/approve`, data)
         return response.data
     },
 
